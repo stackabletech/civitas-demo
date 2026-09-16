@@ -174,6 +174,18 @@ Where to look:
   (result) and `de.civitascore.pipeline.status` (pipeline status from NiFi).
 - Data: `just demo-rows` shows the rows in PostGIS.
 
+Things to try:
+
+1. Take the dataset back and release it again. In the portal open "Stackable Demo", click
+   edit, set the status from "Verfügbar" to "Fertig" and save. The flow disappears from NiFi.
+   Set it to "Verfügbar" again and it comes back. Each change shows up as new messages in the
+   saga topics in kafka-ui.
+2. Break the pipeline. Stop the MQTT broker with
+   `kubectl -n dev scale deploy/demo-mqtt --replicas=0`. After about 15 seconds the portal
+   shows the pipeline as ERROR, with the error message from NiFi. Start it again with
+   `--replicas=1` and data flows again, but the portal keeps showing ERROR. Release the
+   dataset again (or run `just demo-down` and `just demo`) to get back to OK.
+
 `just demo-down` takes the dataset back to draft (config-adapter removes the NiFi flow) and
 removes the MQTT broker. Running `just demo` again brings it back. The entries in the portal
 and the rows in PostGIS stay. Delete them in the portal if you do not need them anymore.
