@@ -1,0 +1,34 @@
+---
+# One CIVITAS/CORE instance (namespace = global.instanceSlug) on Stackable Kafka/NiFi.
+# `kafka` and `nifi` resolve to deployment/addons/{kafka,nifi} because that directory
+# exists in civitas-core-deployment (symlinked by `just link`).
+#
+#   just instance    (== helmfile -f helmfile-instance.yaml.gotmpl -e local sync)
+environments:
+  local:
+    values: []
+---
+helmfiles:
+  - path: '{{ env "CIVITAS_CORE_DEPLOYMENT" | default "../civitas-core-deployment" }}/helmfile-root.yaml.gotmpl'
+    values:
+      - values/default-instance.yaml
+      - environments:
+          - local
+        deployLayer: instance
+        components:
+          - prepare
+          - secrets
+          - networkpolicies
+          - postgres
+          - etcd
+          - kafka
+          - keycloak
+          - authz
+          - apisix
+          - frost
+          - nifi
+          - config-adapters
+          - portal
+          - geoserver
+          - valkey
+          - superset

@@ -1,0 +1,24 @@
+---
+# Shared cluster operators: CloudNativePG (from civitas-core-deployment) and the
+# Stackable operators (deployment/addons/stackable). Sync once per cluster.
+#
+#   just operators   (== helmfile -f helmfile-operators.yaml.gotmpl -e local sync)
+environments:
+  local:
+    values: []
+---
+helmfiles:
+  - path: '{{ env "CIVITAS_CORE_DEPLOYMENT" | default "../civitas-core-deployment" }}/helmfile-root.yaml.gotmpl'
+    values:
+      - values/default-instance.yaml
+      - environments:
+          - local
+        deployLayer: operators
+        components:
+          - prepare
+          - postgres
+          - stackable
+          - networkpolicies
+        global:
+          operators:
+            watchAllNamespaces: true
