@@ -35,5 +35,5 @@ for i in $(seq 1 15); do
 done
 kill "$pf" 2>/dev/null || true
 status=$(yq -p json '.[] | select(.name == "kafka-cluster") | .status' <<<"$clusters" 2>/dev/null || true)
-assert_eq "kafka-ui shows kafka-cluster as online" "online" "$status"
+assert_eq "kafka-ui shows kafka-cluster as online" "ONLINE" "$status"
 finish

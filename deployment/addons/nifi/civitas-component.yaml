@@ -8,3 +8,9 @@ parts:
     timeout: 900
     needs:
       - nifi.nifi
+    hooks:
+      # NiFi needs a few minutes to start. Wait for it, so the Job does not give up.
+      - events: ["presync"]
+        showlogs: true
+        command: kubectl
+        args: ["-n", "{{ .Release.Namespace }}", "wait", "--for=condition=Available", "nificluster/nifi-nifi", "--timeout=900s"]

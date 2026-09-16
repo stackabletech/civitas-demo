@@ -3,6 +3,8 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 # civitas-core-deployment version this demo was tested with. `just setup` clones it.
 v2_repo := "https://gitlab.com/civitas-connect/civitas-core/civitas-core-v2/civitas-core-deployment.git"
 v2_version := "v2.0-rc2"
+test_image := "registry.gitlab.com/civitas-connect/civitas-core/docker-images/cicd:2.0.0-beta"
+seed_image := "registry.gitlab.com/civitas-connect/civitas-core/docker-images/seed-platform-data:1.0.0"
 export CIVITAS_CORE_DEPLOYMENT := env("CIVITAS_CORE_DEPLOYMENT", justfile_directory() / ".civitas-core-deployment")
 cluster := env("CLUSTER", "kind")
 env := "local"
@@ -182,6 +184,25 @@ port-forward port="8443":
       -n ingress-nginx port-forward svc/ingress-nginx-controller {{port}}:443)
     if [ {{port}} -lt 1024 ]; then sudo "${cmd[@]}"; else "${cmd[@]}"; fi
 
+# Load example data (data pools, datasets, ...) into the platform
+seed:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ns=$(yq '.global.instanceSlug' < {{values}})
+    domain=$(yq '.global.domain' < {{values}})
+    secret() { kubectl -n "$ns" get secret "$1" -o jsonpath="{.data.$2}" | base64 -d; }
+    kubectl -n "$ns" get secret nifi-demo-admin-user >/dev/null 2>&1 || { echo "run 'just create-admin-user' first"; exit 1; }
+    # Runs on your computer and reaches the platform through port 443 (see README).
+    docker run --rm --network host \
+      $(for h in idm api portal; do printf -- '--add-host %s.%s:127.0.0.1 ' "$h" "$domain"; done) \
+      -v "$CIVITAS_CORE_DEPLOYMENT/dev-deployment/.ssl/civitas.crt:/ca.crt:ro" \
+      -e REQUESTS_CA_BUNDLE=/ca.crt \
+      -e KEYCLOAK_URL="https://idm.$domain" -e KEYCLOAK_REALM="$ns" \
+      -e KEYCLOAK_CLIENT_ID=portal-frontend -e KEYCLOAK_CLIENT_SECRET="$(secret keycloak-client-portal-frontend client-secret)" \
+      -e AUTH_EMAIL="$(secret nifi-demo-admin-user username)" -e AUTH_PASSWORD="$(secret nifi-demo-admin-user password)" \
+      -e API_BASE_URL="https://api.$domain/v1" \
+      {{seed_image}} import --input exports/1bf03aa3-3d9a-4291-8589-b888aa684c05.json
+
 # --- tests -------------------------------------------------------------------
 
 # Check the config without a cluster
@@ -207,3 +228,37 @@ test-nifi:
 # Run all checks
 smoke-test:
     tests/smoke.sh
+
+# Big end-to-end test from civitas-core-deployment: publish a dataset with pipelines
+system-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ns=$(yq '.global.instanceSlug' < {{values}})
+    domain=$(yq '.global.domain' < {{values}})
+    secret() { kubectl -n "$ns" get secret "$1" -o jsonpath="{.data.$2}" | base64 -d; }
+    kubectl -n "$ns" get secret nifi-demo-admin-user >/dev/null 2>&1 || { echo "run 'just create-admin-user' first"; exit 1; }
+    # The test image trusts our CA: Java through keytool, Chromium through its NSS database.
+    docker run --rm --network host \
+      $(for h in idm api portal; do printf -- '--add-host %s.%s:127.0.0.1 ' "$h" "$domain"; done) \
+      -v "$CIVITAS_CORE_DEPLOYMENT:/workspace" -w /workspace \
+      -e API_BASE_URL="https://api.$domain/v1" \
+      -e PORTAL_BACKEND_URL="https://portal.$domain/v1" \
+      -e PORTAL_FRONTEND_URL="https://portal.$domain" \
+      -e APISIX_GATEWAY_URL="https://api.$domain" \
+      -e KEYCLOAK_URL="https://idm.$domain" -e KEYCLOAK_REALM="$ns" \
+      -e KEYCLOAK_CLIENT_ID=portal-frontend -e KEYCLOAK_CLIENT_SECRET="$(secret keycloak-client-portal-frontend client-secret)" \
+      -e SYSTEM_TEST_AUTH_USER="$(secret nifi-demo-admin-user username)" \
+      -e SYSTEM_TEST_AUTH_PASSWORD="$(secret nifi-demo-admin-user password)" \
+      -e HOST_IDS="$(id -u):$(id -g)" \
+      {{test_image}} bash -c '
+        set -e
+        # Give build and report files back to you (the container runs as root).
+        trap "chown -R \$HOST_IDS tests/system" EXIT
+        ca=dev-deployment/.ssl/civitas.crt
+        keytool -importcert -noprompt -cacerts -storepass changeit -alias civitas -file "$ca" >/dev/null
+        apk add --quiet --no-cache nss-tools
+        mkdir -p ~/.pki/nssdb
+        certutil -d sql:$HOME/.pki/nssdb -N --empty-password
+        certutil -d sql:$HOME/.pki/nssdb -A -t C,, -n civitas -i "$ca"
+        bash tests/system/run-system-tests.sh'
+    echo "Report: $CIVITAS_CORE_DEPLOYMENT/tests/system/results/report.html"

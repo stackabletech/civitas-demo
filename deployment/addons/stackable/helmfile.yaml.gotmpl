@@ -87,6 +87,10 @@ releases:
       {{- end }}
     {{- end }}
     {{- end }}
+    {{- if index $part "hooks" }}
+    hooks:
+      {{- index $part "hooks" | toYaml | nindent 6 }}
+    {{- end }}
     # development/production values files are optional.
     missingFileHandler: Debug
     values:

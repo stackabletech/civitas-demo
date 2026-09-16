@@ -161,7 +161,6 @@ kubectl -n dev logs nifi-nifi-node-default-0 -c nifi
 | `run 'just setup'` from check-tools | Run `just setup`. |
 | `no matches for kind KafkaCluster` | Operators missing. Run `just operators`. |
 | `requiredEnv CIVITAS_CORE_DEPLOYMENT` | Set `CIVITAS_CORE_DEPLOYMENT` (see Commands). |
-| First `nifi-bootstrap` pod shows `Error` | Normal. NiFi needs 2 to 3 minutes to start, the Job tries again. |
 | `Account is not fully set up` in Keycloak | Run `just create-admin-user`. |
 | Login fails after the Keycloak page | Use port 443 (see "Open NiFi in the browser"). |
 | NiFi says `No applicable policies` after changing the admin | NiFi only sets the admin on the first start. Delete it and its disks, then reinstall: `kubectl -n dev delete nificluster nifi-nifi`, `kubectl -n dev delete pvc -l app.kubernetes.io/instance=nifi-nifi`, `just sync-component nifi`. |
