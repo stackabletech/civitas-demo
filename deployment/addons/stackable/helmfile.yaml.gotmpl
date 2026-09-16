@@ -1,0 +1,99 @@
+---
+# This addon is reached through the deployment/ symlink, which helmfile resolves
+# physically; paths into civitas-core-deployment therefore use CIVITAS_CORE_DEPLOYMENT.
+bases:
+  - '{{ requiredEnv "CIVITAS_CORE_DEPLOYMENT" }}/defaults/helm-defaults.yaml'
+---
+{{- $componentData := (readFile "./civitas-component.yaml" | fromYaml) }}
+
+{{- $root := .Values }}
+{{- $component := $componentData.component }}
+{{- $parts := $componentData.parts }}
+
+repositories:
+{{- $alreadyAdded := dict }}
+{{- range $parts }}
+  {{- $chartCfg := index $root.charts $component .name }}
+  {{- $repoUrl := index $chartCfg "repository" | default "" }}
+  {{- if ne $repoUrl "" }}
+    {{- $repoName := index (splitList "/" $chartCfg.chart) 0 }}
+    {{- if not (hasKey $alreadyAdded $repoName) }}
+      {{- $_ := set $alreadyAdded $repoName true }}
+  - name: cc2-{{ $repoName }}
+    url: {{ $repoUrl }}
+    {{- if index $chartCfg "oci" }}
+    oci: true
+    {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+releases:
+  {{- $layer := $root.deployLayer | default "" }}
+  {{- range $parts }}
+  {{- $part := . }}
+  {{- $releaseName := printf "%s-%s" $component $part.name }}
+  {{- $chartCfg := index $root.charts $component $part.name }}
+  {{- $repoUrl := index $chartCfg "repository" | default "" }}
+  {{- $partLabels := index $part "extraLabels" | default dict }}
+  {{- $isOperator := eq (index $partLabels "operator" | default "") "true" }}
+  {{- if or (eq $layer "") (and (eq $layer "operators") $isOperator) (and (eq $layer "instance") (not $isOperator)) }}
+  - name: {{ $releaseName }}
+    labels:
+      release: {{ $releaseName }}
+      {{- range $key, $value := $partLabels }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
+    namespace: {{ index $root $component $part.name "namespace" }}
+    {{- if ne $repoUrl "" }}
+    chart: cc2-{{ $chartCfg.chart }}
+    {{- else if hasPrefix "../../../" $chartCfg.chart }}
+    # Chart inside civitas-core-deployment (see comment on bases above).
+    chart: {{ requiredEnv "CIVITAS_CORE_DEPLOYMENT" }}/{{ trimPrefix "../../../" $chartCfg.chart }}
+    {{- else }}
+    chart: {{ $chartCfg.chart }}
+    {{- end }}
+    {{- if index $chartCfg "version" }}
+    version: {{ $chartCfg.version | quote }}
+    {{- end }}
+    createNamespace: {{ $root.global.createNamespaces }}
+    {{- if index $part "timeout" }}
+    timeout: {{ $part.timeout }}
+    {{- end }}
+    installed: {{ index $root $component $part.name "enabled" }}
+    condition: {{ $component }}.{{ $part.name }}.enabled
+    {{- if index $part "needs" }}
+    {{- $renderedNeeds := list }}
+    {{- range index $part "needs" }}
+      {{- $items := splitList "." . }}
+      {{- $depComponent := index $items 0 }}
+      {{- $depPart := index $items 1 }}
+      {{- $depIsOperator := false }}
+      {{- if eq $depComponent $component }}
+        {{- range $p := $parts }}
+          {{- if eq $p.name $depPart }}
+            {{- $depLabels := index $p "extraLabels" | default dict }}
+            {{- if eq (index $depLabels "operator" | default "") "true" }}{{- $depIsOperator = true }}{{- end }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- if not (and (eq $layer "instance") $depIsOperator) }}
+        {{- $renderedNeeds = append $renderedNeeds (printf "%s/%s-%s" (index $root $depComponent $depPart "namespace") ($depComponent | kebabcase) $depPart) }}
+      {{- end }}
+    {{- end }}
+    {{- if gt (len $renderedNeeds) 0 }}
+    needs:
+      {{- range $renderedNeeds }}
+      - {{ . }}
+      {{- end }}
+    {{- end }}
+    {{- end }}
+    values:
+      - values/{{ $part.name }}/base-values.yaml.gotmpl
+      - values/{{ $part.name }}/{{ $root.global.profile }}-values.yaml.gotmpl
+      - {{- index $root $component $part.name "rawValues" | default dict | toYaml | nindent 8 }}
+  {{- end }}
+  {{- end }}
+
+commonLabels:
+  component: {{ $component }}

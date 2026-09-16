@@ -1,0 +1,18 @@
+---
+{{- $ns := include "civitas.operatorNamespace" (dict "global" .Values.global "suffix" "stackable" "deployLayer" .Values.deployLayer) }}
+stackable:
+  commons:
+    enabled: true
+    namespace: {{ $ns }}
+  secret:
+    enabled: true
+    namespace: {{ $ns }}
+  listener:
+    enabled: true
+    namespace: {{ $ns }}
+  kafka:
+    enabled: true
+    namespace: {{ $ns }}
+  nifi:
+    enabled: true
+    namespace: {{ $ns }}

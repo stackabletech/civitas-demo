@@ -1,0 +1,19 @@
+---
+# The kube-apiserver calls each Stackable operator's CRD conversion webhook on :8443.
+# The apiserver is not selectable as a NetworkPolicy peer, so (like v2's
+# postgres-operator-webhook) allow the port from anywhere, scoped to webhook pods.
+# Without it, default-deny-stackable in the operator namespace breaks CR applies.
+stackable-operator-webhooks:
+  deployLayer: operators
+  componentNamespace: stackable.commons
+  podSelector:
+    webhook.stackable.tech/conversion: enabled
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 8443

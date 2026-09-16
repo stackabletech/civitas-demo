@@ -25,4 +25,14 @@ ca=$(EXTRA_VALUES="$tmpv" hf instance -l name=config-adapters-adapters build --e
 nifi_url=$(grep -A1 'name: NIFI_URL$' <<<"$ca" | grep -o 'value: .*' | head -1 || true)
 assert_eq "NIFI_URL taken from nifi.nifi.url" "value: https://nifi.example:8443" "$nifi_url"
 
+echo "== stackable operators"
+ops=$(hf operators list 2>&1 || true)
+for p in commons secret listener kafka nifi; do
+  assert_contains "release stackable-$p" "stackable-$p" "$ops"
+done
+tpl=$(hf operators -l name=stackable-kafka template 2>&1 || true)
+assert_contains "kafka-operator image 26.7.0" "oci.stackable.tech/sdp/kafka-operator:26.7.0" "$tpl"
+np=$(hf operators -l policy-name=stackable-operator-webhooks template 2>&1 || true)
+assert_contains "webhook NetworkPolicy port 8443" "port: 8443" "$np"
+
 finish

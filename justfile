@@ -80,3 +80,11 @@ cluster-down:
 # Check cluster prerequisites
 test-cluster:
     tests/cluster.sh
+
+# Sync the shared operators layer (CloudNativePG + Stackable operators)
+operators: check-tools link
+    helmfile -f helmfile-operators.yaml.gotmpl -e {{env}} sync
+
+# Check Stackable operators
+test-operators:
+    tests/operators.sh

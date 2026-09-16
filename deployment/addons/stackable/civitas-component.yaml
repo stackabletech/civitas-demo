@@ -1,0 +1,27 @@
+---
+# Stackable Data Platform operators shared by the kafka and nifi addons.
+component: stackable
+parts:
+  - name: commons
+    extraLabels:
+      operator: 'true'
+  - name: secret
+    extraLabels:
+      operator: 'true'
+  - name: listener
+    extraLabels:
+      operator: 'true'
+  - name: kafka
+    extraLabels:
+      operator: 'true'
+    needs:
+      - stackable.commons
+      - stackable.secret
+      - stackable.listener
+  - name: nifi
+    extraLabels:
+      operator: 'true'
+    needs:
+      - stackable.commons
+      - stackable.secret
+      - stackable.listener

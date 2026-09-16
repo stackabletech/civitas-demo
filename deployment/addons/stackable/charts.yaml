@@ -1,0 +1,27 @@
+---
+stackable:
+  commons:
+    repository: oci.stackable.tech/sdp-charts
+    oci: true
+    chart: stackable/commons-operator
+    version: '26.7.0'
+  secret:
+    repository: oci.stackable.tech/sdp-charts
+    oci: true
+    chart: stackable/secret-operator
+    version: '26.7.0'
+  listener:
+    repository: oci.stackable.tech/sdp-charts
+    oci: true
+    chart: stackable/listener-operator
+    version: '26.7.0'
+  kafka:
+    repository: oci.stackable.tech/sdp-charts
+    oci: true
+    chart: stackable/kafka-operator
+    version: '26.7.0'
+  nifi:
+    repository: oci.stackable.tech/sdp-charts
+    oci: true
+    chart: stackable/nifi-operator
+    version: '26.7.0'
