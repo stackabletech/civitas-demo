@@ -183,6 +183,27 @@ port-forward port="8443":
       -n ingress-nginx port-forward svc/ingress-nginx-controller {{port}}:443)
     if [ {{port}} -lt 1024 ]; then sudo "${cmd[@]}"; else "${cmd[@]}"; fi
 
+# --- demo --------------------------------------------------------------------
+
+# Demo pipeline in the portal: MQTT -> NiFi -> PostGIS (needs port 443, see README)
+demo:
+    demo/demo.sh up
+
+# Take the demo pipeline down again (the portal entries stay)
+demo-down:
+    demo/demo.sh down
+
+# Show the newest rows the demo pipeline wrote to PostGIS
+demo-rows:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ns=$(yq '.global.instanceSlug' < {{values}})
+    sql="select table_schema from information_schema.tables where table_name = 'stackable_demo' limit 1"
+    schema=$(kubectl -n "$ns" exec postgres-cluster-1 -c postgres -- psql -d payload_data -tAc "$sql")
+    [ -n "$schema" ] || { echo "no demo table yet, run 'just demo' and wait a bit"; exit 1; }
+    kubectl -n "$ns" exec postgres-cluster-1 -c postgres -- psql -d payload_data -c \
+      "select count(*) as rows from $schema.stackable_demo" -c "select * from $schema.stackable_demo order by 1 desc limit 5"
+
 # --- tests -------------------------------------------------------------------
 
 # Check the config without a cluster

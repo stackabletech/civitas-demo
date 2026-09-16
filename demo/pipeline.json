@@ -1,0 +1,404 @@
+{
+  "name": "__PIPELINE_NAME__",
+  "description": "Fake readings from MQTT into PostGIS",
+  "dataSourceIds": [
+    "__DATA_SOURCE_ID__"
+  ],
+  "dataSinkIds": [
+    "__DATA_SINK_ID__"
+  ],
+  "model": {
+    "edges": [
+      {
+        "id": "7c306a61-fc56-4017-89f4-f60c9c5b397b",
+        "data": {
+          "label": ""
+        },
+        "type": "smoothstep",
+        "source": "b64c9c86-2c65-40a4-979f-40407d6a4897",
+        "target": "863c7725-6825-4511-9870-247779494b6e"
+      },
+      {
+        "id": "91c381af-fb4a-4799-bb12-4e252b0c1f26",
+        "data": {
+          "label": ""
+        },
+        "type": "smoothstep",
+        "source": "863c7725-6825-4511-9870-247779494b6e",
+        "target": "5deda99a-512c-4bb8-bb56-23ece7c00698"
+      },
+      {
+        "id": "139ef919-4dd6-4aa4-9e27-2c8334219860",
+        "data": {
+          "label": ""
+        },
+        "type": "smoothstep",
+        "source": "5deda99a-512c-4bb8-bb56-23ece7c00698",
+        "target": "565b1243-654b-4df1-99aa-1fc959e1ca20"
+      },
+      {
+        "id": "b1a7010b-916e-42e0-8614-85585b95cae5",
+        "data": {
+          "label": ""
+        },
+        "type": "smoothstep",
+        "source": "565b1243-654b-4df1-99aa-1fc959e1ca20",
+        "target": "bfd14d1f-cee1-4d05-b780-d07d3c04ee7e"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "b64c9c86-2c65-40a4-979f-40407d6a4897",
+        "data": {
+          "label": "Start",
+          "nodeType": "start",
+          "configured": true,
+          "description": "Entry point of the pipeline. Execution begins here."
+        },
+        "type": "start",
+        "measured": {
+          "width": 32,
+          "height": 32
+        },
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "863c7725-6825-4511-9870-247779494b6e",
+        "data": {
+          "label": "DataSource",
+          "entityId": "__DATA_SOURCE_ID__",
+          "configured": true,
+          "entityName": "__DATA_SOURCE_NAME__",
+          "entityType": "datasource",
+          "entityMetadata": {
+            "connector": "MQTT"
+          }
+        },
+        "type": "dataSource",
+        "dragging": false,
+        "measured": {
+          "width": 160,
+          "height": 66
+        },
+        "position": {
+          "x": 80,
+          "y": 160
+        },
+        "selected": false
+      },
+      {
+        "id": "bfd14d1f-cee1-4d05-b780-d07d3c04ee7e",
+        "data": {
+          "label": "End",
+          "nodeType": "end",
+          "configured": true,
+          "description": "Exit point of the pipeline. Execution completes here."
+        },
+        "type": "end",
+        "dragging": false,
+        "measured": {
+          "width": 32,
+          "height": 32
+        },
+        "position": {
+          "x": 160,
+          "y": 500
+        },
+        "selected": false
+      },
+      {
+        "id": "565b1243-654b-4df1-99aa-1fc959e1ca20",
+        "data": {
+          "label": "Geo Persistence",
+          "entityId": "__DATA_SINK_ID__",
+          "tableName": "__TABLE_NAME__",
+          "configured": true,
+          "entityType": "persistence",
+          "versionNumber": "1.0.0",
+          "dataStructureName": "__DS_NAME__",
+          "dataStructureVersionId": "__DS_ID__/__DSV_ID__"
+        },
+        "type": "geoPersistence",
+        "dragging": false,
+        "measured": {
+          "width": 160,
+          "height": 66
+        },
+        "position": {
+          "x": 60,
+          "y": 380
+        },
+        "selected": false
+      },
+      {
+        "id": "5deda99a-512c-4bb8-bb56-23ece7c00698",
+        "data": {
+          "label": "Mapping",
+          "configured": true,
+          "sourceName": "__DS_NAME__",
+          "targetName": "__DS_NAME__",
+          "mappingConfig": {
+            "fields": {
+              "$.geom": {
+                "op": "geoPoint",
+                "lat": "$.lat",
+                "lon": "$.lon"
+              }
+            },
+            "source": "__URN__",
+            "target": "__URN__",
+            "$schema": "https://civitasconnect.digital/core/mapping/v1",
+            "positions": {
+              "$.geom#geoPoint": {
+                "x": 496.53157398680486,
+                "y": -101.85721017907636
+              }
+            }
+          },
+          "sourceVersionId": "__DSV_ID__",
+          "targetVersionId": "__DSV_ID__",
+          "sourceDatastructureId": "__DS_ID__",
+          "targetDatastructureId": "__DS_ID__"
+        },
+        "type": "mapping",
+        "dragging": false,
+        "measured": {
+          "width": 160,
+          "height": 66
+        },
+        "position": {
+          "x": 80,
+          "y": 260
+        },
+        "selected": false
+      }
+    ],
+    "viewport": {
+      "x": 0,
+      "y": 0,
+      "zoom": 1
+    },
+    "nodePositions": {
+      "565b1243-654b-4df1-99aa-1fc959e1ca20": {
+        "x": 60,
+        "y": 380
+      },
+      "5deda99a-512c-4bb8-bb56-23ece7c00698": {
+        "x": 80,
+        "y": 260
+      },
+      "863c7725-6825-4511-9870-247779494b6e": {
+        "x": 80,
+        "y": 160
+      },
+      "b64c9c86-2c65-40a4-979f-40407d6a4897": {
+        "x": 100,
+        "y": 100
+      },
+      "bfd14d1f-cee1-4d05-b780-d07d3c04ee7e": {
+        "x": 160,
+        "y": 500
+      }
+    }
+  },
+  "styles": {
+    "edges": [
+      {
+        "id": "7c306a61-fc56-4017-89f4-f60c9c5b397b",
+        "data": {
+          "label": ""
+        },
+        "type": "smoothstep",
+        "source": "b64c9c86-2c65-40a4-979f-40407d6a4897",
+        "target": "863c7725-6825-4511-9870-247779494b6e"
+      },
+      {
+        "id": "91c381af-fb4a-4799-bb12-4e252b0c1f26",
+        "data": {
+          "label": ""
+        },
+        "type": "smoothstep",
+        "source": "863c7725-6825-4511-9870-247779494b6e",
+        "target": "5deda99a-512c-4bb8-bb56-23ece7c00698"
+      },
+      {
+        "id": "139ef919-4dd6-4aa4-9e27-2c8334219860",
+        "data": {
+          "label": ""
+        },
+        "type": "smoothstep",
+        "source": "5deda99a-512c-4bb8-bb56-23ece7c00698",
+        "target": "565b1243-654b-4df1-99aa-1fc959e1ca20"
+      },
+      {
+        "id": "b1a7010b-916e-42e0-8614-85585b95cae5",
+        "data": {
+          "label": ""
+        },
+        "type": "smoothstep",
+        "source": "565b1243-654b-4df1-99aa-1fc959e1ca20",
+        "target": "bfd14d1f-cee1-4d05-b780-d07d3c04ee7e"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "b64c9c86-2c65-40a4-979f-40407d6a4897",
+        "data": {
+          "label": "Start",
+          "nodeType": "start",
+          "configured": true,
+          "description": "Entry point of the pipeline. Execution begins here."
+        },
+        "type": "start",
+        "measured": {
+          "width": 32,
+          "height": 32
+        },
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "863c7725-6825-4511-9870-247779494b6e",
+        "data": {
+          "label": "DataSource",
+          "entityId": "__DATA_SOURCE_ID__",
+          "configured": true,
+          "entityName": "__DATA_SOURCE_NAME__",
+          "entityType": "datasource",
+          "entityMetadata": {
+            "connector": "MQTT"
+          }
+        },
+        "type": "dataSource",
+        "dragging": false,
+        "measured": {
+          "width": 160,
+          "height": 66
+        },
+        "position": {
+          "x": 80,
+          "y": 160
+        },
+        "selected": false
+      },
+      {
+        "id": "bfd14d1f-cee1-4d05-b780-d07d3c04ee7e",
+        "data": {
+          "label": "End",
+          "nodeType": "end",
+          "configured": true,
+          "description": "Exit point of the pipeline. Execution completes here."
+        },
+        "type": "end",
+        "dragging": false,
+        "measured": {
+          "width": 32,
+          "height": 32
+        },
+        "position": {
+          "x": 160,
+          "y": 500
+        },
+        "selected": false
+      },
+      {
+        "id": "565b1243-654b-4df1-99aa-1fc959e1ca20",
+        "data": {
+          "label": "Geo Persistence",
+          "entityId": "__DATA_SINK_ID__",
+          "tableName": "__TABLE_NAME__",
+          "configured": true,
+          "entityType": "persistence",
+          "versionNumber": "1.0.0",
+          "dataStructureName": "__DS_NAME__",
+          "dataStructureVersionId": "__DS_ID__/__DSV_ID__"
+        },
+        "type": "geoPersistence",
+        "dragging": false,
+        "measured": {
+          "width": 160,
+          "height": 66
+        },
+        "position": {
+          "x": 60,
+          "y": 380
+        },
+        "selected": false
+      },
+      {
+        "id": "5deda99a-512c-4bb8-bb56-23ece7c00698",
+        "data": {
+          "label": "Mapping",
+          "configured": true,
+          "sourceName": "__DS_NAME__",
+          "targetName": "__DS_NAME__",
+          "mappingConfig": {
+            "fields": {
+              "$.geom": {
+                "op": "geoPoint",
+                "lat": "$.lat",
+                "lon": "$.lon"
+              }
+            },
+            "source": "__URN__",
+            "target": "__URN__",
+            "$schema": "https://civitasconnect.digital/core/mapping/v1",
+            "positions": {
+              "$.geom#geoPoint": {
+                "x": 496.53157398680486,
+                "y": -101.85721017907636
+              }
+            }
+          },
+          "sourceVersionId": "__DSV_ID__",
+          "targetVersionId": "__DSV_ID__",
+          "sourceDatastructureId": "__DS_ID__",
+          "targetDatastructureId": "__DS_ID__"
+        },
+        "type": "mapping",
+        "dragging": false,
+        "measured": {
+          "width": 160,
+          "height": 66
+        },
+        "position": {
+          "x": 80,
+          "y": 260
+        },
+        "selected": false
+      }
+    ],
+    "viewport": {
+      "x": 0,
+      "y": 0,
+      "zoom": 1
+    },
+    "nodePositions": {
+      "565b1243-654b-4df1-99aa-1fc959e1ca20": {
+        "x": 60,
+        "y": 380
+      },
+      "5deda99a-512c-4bb8-bb56-23ece7c00698": {
+        "x": 80,
+        "y": 260
+      },
+      "863c7725-6825-4511-9870-247779494b6e": {
+        "x": 80,
+        "y": 160
+      },
+      "b64c9c86-2c65-40a4-979f-40407d6a4897": {
+        "x": 100,
+        "y": 100
+      },
+      "bfd14d1f-cee1-4d05-b780-d07d3c04ee7e": {
+        "x": 160,
+        "y": 500
+      }
+    }
+  }
+}

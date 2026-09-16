@@ -42,7 +42,7 @@ NiFi. It is in `patches/` and `just setup` adds it.
 ## What you need
 
 - `kubectl`, `helm` with the `helm-diff` plugin, `helmfile`, `yq`, `envsubst`, [`just`](https://github.com/casey/just)
-- `git`, `kind` or `k3d`, and Docker
+- `git`, `kind` or `k3d`, and Docker (`jq` and `python3` for the demo)
 - About 8 CPU cores and 20 GB memory. The first install takes 20 to 30 minutes.
 
 ```bash
@@ -94,6 +94,7 @@ because Keycloak does not accept other ports.
 | `just create-admin-user` | Set a password for `admin@civitas.test` |
 | `just add-hosts` / `just port-forward 443` | Browser access |
 | `just template` / `just diff` | Show the Kubernetes files or the changes, without installing |
+| `just demo` / `just demo-down` | Demo pipeline in the portal (see below) |
 | `just smoke-test` | Run all checks (single checks: `just test-render`, `test-kafka`, `test-nifi`, ...) |
 | `just destroy` | Delete the cluster |
 
@@ -153,6 +154,27 @@ NiFi status and logs:
 kubectl -n dev get nificluster nifi-nifi
 kubectl -n dev logs nifi-nifi-node-default-0 -c nifi
 ```
+
+## Demo pipeline
+
+`just demo` shows Kafka and NiFi at work inside CIVITAS. You need `just create-admin-user`
+and port 443 first (see "Open NiFi in the browser").
+
+It starts a small MQTT broker with a sender that posts a fake reading every 5 seconds. Then
+it creates a data pool, a data structure, an MQTT data source and the dataset
+"Stackable Demo" with a pipeline in the portal, and releases the dataset. config-adapter
+gets the job over Kafka and builds the flow in NiFi. The readings go MQTT, NiFi, PostGIS.
+
+Where to look:
+
+- Portal: https://portal.civitas.test, "Unsere Daten", "Datensätze", "Stackable Demo". The
+  pipeline shows its status there (NiFi reports it back over Kafka).
+- NiFi: https://nifi.civitas.test/nifi, the process group `pipeline-...` with running processors.
+- kafka-ui: the topics `de.civitascore.dataset.saga.trigger` and `de.civitascore.saga.result`.
+- Data: `just demo-rows` shows the rows in PostGIS.
+
+`just demo-down` takes the dataset back to draft (config-adapter removes the NiFi flow) and
+removes the MQTT broker. Running `just demo` again brings it back.
 
 ## End-to-end test
 
