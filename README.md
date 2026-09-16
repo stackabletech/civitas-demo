@@ -94,6 +94,7 @@ because Keycloak does not accept other ports.
 | `just credentials` | Show logins |
 | `just create-admin-user` | Set a password for `admin@civitas.test` |
 | `just add-hosts` / `just port-forward 443` | Browser access |
+| `just kafka-ui` | Open kafka-ui on http://localhost:8080 |
 | `just template` / `just diff` | Show the Kubernetes files or the changes, without installing |
 | `just demo` / `just demo-down` | Demo pipeline in the portal (see below) |
 | `just smoke-test` | Run all checks (single checks: `just test-render`, `test-kafka`, `test-nifi`, ...) |
@@ -143,11 +144,8 @@ kubectl -n dev exec kafka-cluster-broker-default-0 -c kafka -- \
   --bootstrap-server kafka-cluster-broker-default-bootstrap:9092
 ```
 
-kafka-ui (web page for Kafka), then open http://localhost:8080:
-
-```bash
-kubectl -n dev port-forward svc/kafka-ui 8080:80
-```
+kafka-ui (web page for Kafka): run `just kafka-ui`, keep it running and open
+http://localhost:8080. It needs no login and no port 443.
 
 NiFi status and logs:
 
@@ -171,11 +169,14 @@ Where to look:
 - Portal: https://portal.civitas.test, "Unsere Daten", "Datensätze", "Stackable Demo". The
   pipeline shows its status there (NiFi reports it back over Kafka).
 - NiFi: https://nifi.civitas.test/nifi, the process group `pipeline-...` with running processors.
-- kafka-ui: the topics `de.civitascore.dataset.saga.trigger` and `de.civitascore.saga.result`.
+- kafka-ui (`just kafka-ui`, then http://localhost:8080): the topics
+  `de.civitascore.dataset.saga.trigger` (job for config-adapter), `de.civitascore.saga.result`
+  (result) and `de.civitascore.pipeline.status` (pipeline status from NiFi).
 - Data: `just demo-rows` shows the rows in PostGIS.
 
 `just demo-down` takes the dataset back to draft (config-adapter removes the NiFi flow) and
-removes the MQTT broker. Running `just demo` again brings it back.
+removes the MQTT broker. Running `just demo` again brings it back. The entries in the portal
+and the rows in PostGIS stay. Delete them in the portal if you do not need them anymore.
 
 ## End-to-end test
 
@@ -187,6 +188,8 @@ The report ends up in `.civitas-core-deployment/tests/system/results/report.html
 With civitas-core-deployment `v2.0-rc2` it does not pass all steps yet. This is not caused
 by Stackable:
 
+- Each run leaves its entries in the portal (names start with "Saga" or "Test"). Delete them
+  in the portal if they get in the way.
 - 34 steps pass. Then the test gets stuck on a "save before leaving?" dialog in the pipeline editor.
 - If you release the dataset by hand, the whole saga runs over Kafka (FROST, APISIX, PostGIS,
   GeoServer). The NiFi step then stops in config-adapter before it talks to NiFi, because the

@@ -137,7 +137,7 @@ up() {
 Done. Have a look:
   Portal:   https://portal.$domain  (Unsere Daten > Datensätze > $name)
   NiFi:     https://nifi.$domain/nifi  (process group pipeline-...)
-  kafka-ui: kubectl -n $ns port-forward svc/kafka-ui 8080:80, then http://localhost:8080
+  kafka-ui: just kafka-ui, then http://localhost:8080
   Rows:     just demo-rows
 EOF
 }

@@ -175,6 +175,14 @@ add-hosts:
     line="127.0.0.1 idm.$domain portal.$domain api.$domain dashboard.$domain nifi.$domain"
     if grep -qF "$line" /etc/hosts; then echo "already present"; else echo "$line" | sudo tee -a /etc/hosts; fi
 
+# Open kafka-ui on http://localhost:<port> (keep it running)
+kafka-ui port="8080":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ns=$(yq '.global.instanceSlug' < {{values}})
+    echo "kafka-ui: http://localhost:{{port}}  (Ctrl+C to stop)"
+    kubectl -n "$ns" port-forward svc/kafka-ui {{port}}:80
+
 # Open the platform on localhost (use port 443 for logins, asks for sudo)
 port-forward port="8443":
     #!/usr/bin/env bash
