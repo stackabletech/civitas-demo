@@ -28,8 +28,11 @@ fields. It stays in the repo, marked as superseded.
 
 ## Non-goals
 
-- Changing tracked files in `civitas-core-deployment` (upstream patches are only
-  listed as recommendations in the README).
+- Changing tracked files in `civitas-core-deployment`, with ONE exception decided
+  during planning: a backward-compatible patch making config-adapter's NiFi URL a
+  value (`nifi.nifi.url`), applied on branch `feat/configurable-nifi-url` in the v2
+  checkout and shipped here as `patches/civitas-core-deployment/0001-configurable-nifi-url.patch`
+  (§2.4). Further upstream ideas are listed in the README.
 - Linkerd service mesh and Kyverno runtime policies (disabled:
   `global.serviceMesh.enable=false`, `global.runtimePolicies.enabled=false`;
   `runtime-policies` removed from the component list).
@@ -70,8 +73,7 @@ civitas-stackable-demo/
 │   └── default-instance.yaml       # user-facing knobs (domain, slug, components, toggles, versions)
 ├── deployment/                     # → symlinked as <v2>/deployment
 │   ├── environments/local/
-│   │   ├── global.yaml.gotmpl      # required by v2 root (may be near-empty)
-│   │   └── config-adapters.yaml.gotmpl  # consumer re-wiring (NiFi URL)
+│   │   └── global.yaml.gotmpl      # required by v2 root (near-empty)
 │   └── addons/
 │       ├── stackable/              # operator-layer component: 5 Stackable operators
 │       ├── kafka/                  # replaces Strimzi
@@ -81,13 +83,13 @@ civitas-stackable-demo/
 
 ### Entrypoints and values
 
-- `helmfile-operators.yaml`: `deployLayer: operators`, components
-  `[prepare, postgres, stackable]`, `global.operators.watchAllNamespaces: true`.
+- `helmfile-operators.yaml.gotmpl`: `deployLayer: operators`, components
+  `[prepare, postgres, stackable, networkpolicies]`, `global.operators.watchAllNamespaces: true`.
   Operators land in `civitas-operators` (v2 default for the two-layer model).
 - `helmfile-instance.yaml.gotmpl`: `deployLayer: instance`, full v2 component list
-  minus `runtime-policies`, plus `stackable` (its operator parts are filtered out in
-  the instance layer, so it contributes nothing there; it is listed so that value
-  keys like `stackable.*` are always available).
+  minus `runtime-policies` (`stackable` is not listed; it only has operator parts).
+- Both entrypoints are `.gotmpl` so the v2 path can come from the
+  `CIVITAS_CORE_DEPLOYMENT` env var.
 - Both pass `values/default-instance.yaml` down as state values, so it is the single
   user-facing configuration file (domain, `instanceSlug`, `initialUserEmail`,
   component list, mesh/policy toggles, NiFi ingress toggle, product versions).
@@ -127,7 +129,8 @@ Keeps v2's value contract so consumers need no change:
 
 Parts:
 - `cluster` — local chart rendering:
-  - `KafkaCluster` (name `kafka`), `image.productVersion: 4.2.1`,
+  - `KafkaCluster` (name `kafka-cluster`, same as the Strimzi cluster),
+    `image.productVersion: 4.2.1`,
     `clusterConfig.metadataManager: kraft`,
     `clusterConfig.tls.serverSecretClass: null` (plaintext client listener, as v2),
     internal TLS left at the default `tls` SecretClass;
@@ -140,7 +143,7 @@ Parts:
 - `ui` — v2's kafka-ui chart and values, `bootstrapServers` pointed at the new service.
 
 `bootstrapService`/`bootstrapPort` are set to the Stackable bootstrap Service
-(expected `kafka-broker-default-bootstrap`, plaintext port 9092 — **verified on the
+(expected `kafka-cluster-broker-default-bootstrap`, plaintext port 9092 — **verified on the
 live cluster during implementation** and documented).
 
 Dropped: Strimzi `KafkaTopic kafkasql-journal` (unreferenced in v2), KafkaUsers
@@ -148,7 +151,7 @@ Dropped: Strimzi `KafkaTopic kafkasql-journal` (unreferenced in v2), KafkaUsers
 
 `networkpolicies.yaml`: same allowed peers as v2 (portal backend, kafka-ui,
 config-adapter, nifi) but selecting Stackable Kafka pods
-(`app.kubernetes.io/name: kafka`, `app.kubernetes.io/instance: kafka`) and
+(`app.kubernetes.io/name: kafka`, `app.kubernetes.io/instance: kafka-cluster`) and
 allowing broker↔controller traffic.
 
 ### 2.3 `addons/nifi`
@@ -177,7 +180,10 @@ Parts:
     during `helm template`/`helmfile template`, so the Secret is then skipped with a
     rendered comment instead of failing; on `sync` the `secrets` component has
     already created the source secret (the `nifi` part `needs` it).
-  - `NifiCluster` (name `nifi`), `image.productVersion: 2.9.0`, no
+  - `NifiCluster` (name `nifi-nifi`, equal to v2's release name, so Stackable's pod
+    labels `app.kubernetes.io/name: nifi` + `app.kubernetes.io/instance: nifi-nifi`
+    match the existing v2 NetworkPolicies of postgres and kafka unchanged),
+    `image.productVersion: 2.9.0`, no
     `zookeeperConfigMapName` (Kubernetes clustering backend),
     `authentication: [{authenticationClass: <slug>-keycloak, oidc: {clientCredentialsSecret: nifi-oidc-client}}]`,
     `authorization.standard.accessPolicyProvider.fileBased.initialAdminUser: nifi-bootstrap`,
@@ -192,7 +198,7 @@ Parts:
     Keycloak client already registers.
 - `bootstrap` — v2's `nifi-bootstrap` chart via relative path, v2's values with
   `nifi.url` pointed at the Stackable NiFi pod FQDN (expected
-  `https://nifi-node-default-0.nifi-node-default-headless.<ns>.svc.cluster.local:8443`,
+  `https://nifi-nifi-node-default-0.nifi-nifi-node-default-headless.<ns>.svc.cluster.local:8443`,
   verified live).
 
 `networkpolicies.yaml`: v2's peers (apisix, config-adapter, nifi-bootstrap, nifi
@@ -207,8 +213,10 @@ re-discuss.
 
 ### 2.4 Consumer re-wiring (`deployment/environments/local/`)
 
-- `config-adapters.yaml.gotmpl`: override `NIFI_URL` to the Stackable NiFi pod FQDN.
-  Kafka bootstrap already derives from `kafka.cluster.*` keys.
+- v2 patch (see Non-goals): config-adapter uses `.Values.nifi.nifi.url` when set,
+  otherwise the old hardcoded URL. The nifi addon sets `nifi.nifi.url` in its
+  `default-environment.yaml.gotmpl`. Kafka bootstrap already derives from
+  `kafka.cluster.*` keys. No `config-adapters.yaml.gotmpl` override file needed.
 - portal backend, kafka-ui: no change needed (key-based).
 - Keycloak `nifi` client: unchanged.
 
@@ -223,7 +231,7 @@ for `idm/portal/api/dashboard/nifi.<domain>`.
 - `clusters/common/`: installs ingress-nginx and cert-manager via Helm and applies
   the CA issuer using v2's committed CA (`dev-deployment/.ssl/civitas.crt|key`) and
   `dev-deployment/ca-template.yaml`.
-- `clusters/kind/`: `cluster.yaml` (cluster `civitas-stackable`, one control-plane
+- `clusters/kind/`: `cluster.yaml` (cluster name from `KIND_CLUSTER_NAME`, default `kind`; an existing cluster with that name is reused as-is; one control-plane
   node labelled `ingress-ready=true`, host ports 80/443 mapped); `up.sh` creates the
   cluster, runs common bootstrap, patches the CoreDNS Corefile with a
   `*.civitas.test` → `ingress-nginx-controller.ingress-nginx.svc.cluster.local`
@@ -280,3 +288,23 @@ configuration reference for `values/default-instance.yaml`; troubleshooting
 experimental + Kafka 4.2.1 experimental in SDP 26.7, mesh/Kyverno off, NiFi
 exposed, no journal topic); upstream recommendations for v2 (make config-adapter
 NiFi URL a value, configurable addon path, Stackable-aware Kyverno rules).
+
+## 7. Additions decided during planning
+
+- **Stackable operator webhooks:** every Stackable operator serves a CRD conversion
+  webhook on 8443 (pods labelled `webhook.stackable.tech/conversion: enabled`).
+  `addons/stackable/networkpolicies.yaml` allows 8443 from `0.0.0.0/0` to those
+  pods (same pattern as v2's `postgres-operator-webhook`), because v2's
+  `networkpolicies` component creates a `default-deny-<component>` per component
+  and kind ≥ 0.27 enforces NetworkPolicies.
+- **Addon part names** in `stackable`: `commons`, `secret`, `listener`, `kafka`,
+  `nifi` (releases `stackable-commons`, …; no dashes in value keys).
+- **Keycloak signing:** the v2 realm signs with ES256 only; NiFi gets
+  `nifi.security.user.oidc.preferred.jwsalgorithm=ES256` via `configOverrides`.
+- **JDBC driver:** NiFi pods get `postgresql-42.7.4.jar` at
+  `/opt/nifi/drivers/postgresql.jar` (same path as v2) through a `podOverrides`
+  init container and an `emptyDir`.
+- **Human NiFi admin:** `just create-admin-user` creates the realm user
+  `global.initialUserEmail` (the identity the bootstrap Job grants NiFi admin) with
+  a generated password stored in Secret `nifi-demo-admin-user`, so the UI login can
+  be demonstrated.
