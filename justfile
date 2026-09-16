@@ -22,6 +22,8 @@ check-tools:
     esac
     helm plugin list | grep -q '^diff' || { echo "missing: helm-diff (helm plugin install https://github.com/databus23/helm-diff)"; missing=1; }
     [ -f "$CIVITAS_CORE_DEPLOYMENT/helmfile-root.yaml.gotmpl" ] || { echo "civitas-core-deployment not found at $CIVITAS_CORE_DEPLOYMENT (set CIVITAS_CORE_DEPLOYMENT)"; missing=1; }
+    grep -q 'nifi.nifi "url"' "$CIVITAS_CORE_DEPLOYMENT/components/config-adapters/values/adapters/base-values.yaml.gotmpl" 2>/dev/null \
+      || { echo "civitas-core-deployment lacks the NiFi URL patch: run 'just apply-v2-patch'"; missing=1; }
     if [ "$missing" = 1 ]; then echo "Install hints: brew install helmfile yq kind k3d gettext"; exit 1; fi
     echo "All tools present."
 
@@ -58,3 +60,11 @@ diff layer="instance" selector="":
 # Offline render checks
 test-render: link
     tests/render.sh
+
+# Apply the required config-adapter patch to civitas-core-deployment (idempotent)
+apply-v2-patch:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    f="$CIVITAS_CORE_DEPLOYMENT/components/config-adapters/values/adapters/base-values.yaml.gotmpl"
+    if grep -q 'nifi.nifi "url"' "$f"; then echo "patch already applied"; exit 0; fi
+    git -C "$CIVITAS_CORE_DEPLOYMENT" am "{{justfile_directory()}}/patches/civitas-core-deployment/0001-configurable-nifi-url.patch"

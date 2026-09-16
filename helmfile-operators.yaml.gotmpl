@@ -11,6 +11,10 @@ helmfiles:
   - path: '{{ env "CIVITAS_CORE_DEPLOYMENT" | default "../civitas-core-deployment" }}/helmfile-root.yaml.gotmpl'
     values:
       - values/default-instance.yaml
+      {{- range (env "EXTRA_VALUES" | splitList "," | compact) }}
+      # Additional values files (comma-separated EXTRA_VALUES), e.g. local overrides.
+      - {{ . | quote }}
+      {{- end }}
       - environments:
           - local
         deployLayer: operators

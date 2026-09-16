@@ -1,0 +1,30 @@
+From f85bc729774a2a5fb3becb92e617a7d97e21edd1 Mon Sep 17 00:00:00 2001
+From: Malte Sander <malte.sander.it@gmail.com>
+Date: Wed, 16 Sep 2026 11:03:41 +0200
+Subject: [PATCH] feat(config-adapters): make NiFi URL configurable via
+ nifi.nifi.url
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+---
+ .../config-adapters/values/adapters/base-values.yaml.gotmpl  | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/components/config-adapters/values/adapters/base-values.yaml.gotmpl b/components/config-adapters/values/adapters/base-values.yaml.gotmpl
+index 943e7fe..a6d8a59 100644
+--- a/components/config-adapters/values/adapters/base-values.yaml.gotmpl
++++ b/components/config-adapters/values/adapters/base-values.yaml.gotmpl
+@@ -134,8 +134,9 @@ env:
+ 
+   # NiFi configuration — uses the dedicated `nifi-config-adapter` confidential
+   # client (OAuth 2.0 client-credentials grant); see components/nifi/keycloak-clients.yaml.
+-  # $nifiUrl must be the same as `NIFI_WEB_HTTPS_HOST="${host_name}"` in apache-nifi-helm/templates/configmap.yaml
+-  {{- $nifiUrl := printf "https://nifi-nifi-0.nifi-nifi.%s:8443" .Values.nifi.nifi.namespace }}
++  # Defaults to the apache-nifi-helm pod FQDN, which must match `NIFI_WEB_HTTPS_HOST="${host_name}"`
++  # in apache-nifi-helm/templates/configmap.yaml. Replacement NiFi components set `nifi.nifi.url`.
++  {{- $nifiUrl := index .Values.nifi.nifi "url" | default (printf "https://nifi-nifi-0.nifi-nifi.%s:8443" .Values.nifi.nifi.namespace) }}
+   {{- $nifiTokenUrl := printf "%s/realms/%s/protocol/openid-connect/token" $keycloakUrl $realmName }}
+   - name: NIFI_URL
+     value: {{ $nifiUrl | quote }}
+-- 
+2.43.0
+
