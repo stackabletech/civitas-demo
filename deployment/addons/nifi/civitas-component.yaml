@@ -1,0 +1,11 @@
+---
+# Replaces civitas-core-deployment/components/nifi (apache-nifi-helm) with a Stackable
+# NifiCluster. The nifi-operator lives in deployment/addons/stackable (operators layer).
+component: nifi
+parts:
+  - name: nifi
+    timeout: 600
+  - name: bootstrap
+    timeout: 900
+    needs:
+      - nifi.nifi

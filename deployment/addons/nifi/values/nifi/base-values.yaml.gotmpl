@@ -1,0 +1,27 @@
+---
+{{- $this := .Values.nifi.nifi }}
+{{- $global := .Values.global }}
+{{- if gt (int $this.nodeCount) 1 }}
+{{- fail "addons/nifi: nodeCount > 1 is not supported (nifi.nifi.url, bootstrap Job and config-adapter target node 0)" }}
+{{- end }}
+productVersion: {{ $this.productVersion | quote }}
+replicas: {{ $this.nodeCount }}
+initialAdminUser: {{ $this.bootstrapAdminIdentity | quote }}
+oidc:
+  hostname: {{ .Values.routes.keycloak.subDomain }}.{{ $global.domain }}
+  port: 443
+  realm: {{ $global.instanceSlug }}
+  clientId: nifi
+  clientSecretName: keycloak-client-nifi
+  {{- if eq $global.ingress.clusterIssuer "selfsigned-ca" }}
+  caSecretClass: {{ $global.instanceSlug }}-civitas-ca
+  {{- end }}
+  caSourceSecret: custom-ca-cert
+jdbc:
+  image: {{ .Values.images.nifi.bootstrap.repository }}@{{ .Values.images.nifi.bootstrap.digest }}
+  postgresqlVersion: {{ $this.postgresqlJdbcVersion | quote }}
+ingress:
+  enabled: {{ $this.ingress.enabled }}
+  host: {{ $this.ingress.subdomain }}.{{ $global.domain }}
+  className: {{ $global.ingress.ingressClass }}
+  clusterIssuer: {{ $global.ingress.clusterIssuer }}

@@ -96,3 +96,91 @@ sync-component component:
 # Check Kafka produce/consume
 test-kafka:
     tests/kafka.sh
+
+# Sync the instance layer (full CIVITAS/CORE stack on Stackable Kafka/NiFi)
+instance: check-tools link
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ns=$(cat values/default-instance.yaml | yq '.global.instanceSlug')
+    kubectl get namespace "$ns" >/dev/null 2>&1 || kubectl create namespace "$ns"
+    # Keycloak's config job requires an SMTP secret; dummy values like civitas-core-deployment's `just deploy`.
+    kubectl -n "$ns" get secret keycloak-smtp >/dev/null 2>&1 || kubectl -n "$ns" create secret generic keycloak-smtp \
+      --from-literal=host='smtp.example.com' --from-literal=port='587' \
+      --from-literal=from='noreply@example.com' --from-literal=user='noreply@example.com' \
+      --from-literal=password='YOUR_SMTP_PASSWORD'
+    helmfile -f helmfile-instance.yaml.gotmpl -e {{env}} sync
+
+# Check NiFi (REST with Keycloak token, UI redirect)
+test-nifi:
+    tests/nifi.sh
+
+# Everything: tools, cluster, link, operators, instance
+deploy: check-tools cluster-up link operators instance
+    @echo "Deployed. Run 'just smoke-test' and 'just credentials'."
+
+# End-to-end verification
+smoke-test:
+    tests/smoke.sh
+
+# Stackable CRs, pods and ingresses of the instance
+status:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ns=$(cat values/default-instance.yaml | yq '.global.instanceSlug')
+    kubectl get pods -n civitas-operators
+    kubectl -n "$ns" get kafkaclusters,nificlusters,authenticationclasses,secretclasses 2>/dev/null || true
+    kubectl -n "$ns" get pods,ingress
+
+# Print admin credentials
+credentials:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ns=$(cat values/default-instance.yaml | yq '.global.instanceSlug')
+    domain=$(cat values/default-instance.yaml | yq '.global.domain')
+    echo "Keycloak admin console: https://idm.$domain/admin  user: admin  password: $(kubectl -n "$ns" get secret keycloak-admin-user -o jsonpath='{.data.password}' | base64 -d)"
+    if kubectl -n "$ns" get secret nifi-demo-admin-user >/dev/null 2>&1; then
+      echo "NiFi UI: https://nifi.$domain/nifi  user: $(kubectl -n "$ns" get secret nifi-demo-admin-user -o jsonpath='{.data.username}' | base64 -d)  password: $(kubectl -n "$ns" get secret nifi-demo-admin-user -o jsonpath='{.data.password}' | base64 -d)"
+    else
+      echo "NiFi UI user not created yet: run 'just create-admin-user'"
+    fi
+
+# Create the realm user global.initialUserEmail (NiFi admin via nifi-bootstrap) with a generated password
+create-admin-user:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ns=$(cat values/default-instance.yaml | yq '.global.instanceSlug')
+    email=$(cat values/default-instance.yaml | yq '.global.initialUserEmail')
+    if ! kubectl -n "$ns" get secret nifi-demo-admin-user >/dev/null 2>&1; then
+      pw="Civitas$(head -c 12 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 10)1"
+      kubectl -n "$ns" create secret generic nifi-demo-admin-user --from-literal=username="$email" --from-literal=password="$pw"
+    fi
+    pw=$(kubectl -n "$ns" get secret nifi-demo-admin-user -o jsonpath='{.data.password}' | base64 -d)
+    admin_pw=$(kubectl -n "$ns" get secret keycloak-admin-user -o jsonpath='{.data.password}' | base64 -d)
+    pod=$(kubectl -n "$ns" get pod -l app.kubernetes.io/name=keycloakx -o jsonpath='{.items[0].metadata.name}')
+    kubectl -n "$ns" exec "$pod" -- bash -c "
+      set -e
+      kc=/opt/keycloak/bin/kcadm.sh
+      \$kc config credentials --server http://localhost:8080 --realm master --user admin --password '$admin_pw' >/dev/null
+      id=\$(\$kc get users -r '$ns' -q exact=true -q username='$email' --fields id --format csv --noquotes | head -n1)
+      if [ -z \"\$id\" ]; then
+        \$kc create users -r '$ns' -s username='$email' -s email='$email' -s enabled=true -s emailVerified=true -s firstName=Civitas -s lastName=Admin
+        id=\$(\$kc get users -r '$ns' -q exact=true -q username='$email' --fields id --format csv --noquotes | head -n1)
+      fi
+      \$kc set-password -r '$ns' --userid \"\$id\" --new-password '$pw'
+    "
+    echo "Created/updated $email; see 'just credentials'."
+
+# /etc/hosts entries for browser access (needs sudo; kind needs host ports 80/443)
+add-hosts:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    domain=$(cat values/default-instance.yaml | yq '.global.domain')
+    line="127.0.0.1 idm.$domain portal.$domain api.$domain dashboard.$domain nifi.$domain"
+    if grep -qF "$line" /etc/hosts; then echo "already present"; else echo "$line # civitas-stackable-demo" | sudo tee -a /etc/hosts; fi
+
+# Browser access without host port mappings: forward ingress to https://<host>:8443
+port-forward:
+    kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 8443:443
+
+# Tear down the cluster (CLUSTER=kind|k3d|none) and remove the symlink
+destroy: cluster-down unlink

@@ -1,0 +1,119 @@
+---
+# Copied unchanged from civitas-core-deployment/components/nifi/keycloak-clients.yaml
+# (an addon replaces all of a component's config files). Keep in sync with v2.
+# NiFi OIDC client — Authorization Code flow for the web UI / REST API (browser).
+nifi:
+  name: NiFi
+  description: CIVITAS Apache NiFi OIDC client (Authorization Code flow for web UI / REST API)
+  subdomain: nifi
+  redirectPath: /nifi-api/access/oidc/callback
+  additionalRedirectPaths:
+    - /nifi/logout-complete
+  includePort443Variant: true
+  rawValues:
+    publicClient: false
+    bearerOnly: false
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+    authorizationServicesEnabled: false
+    defaultClientScopes:
+      - basic
+      - email
+      - profile
+      - roles
+    optionalClientScopes: []
+
+# Every in-cluster machine identity (bootstrap Job, config-adapter) authenticates
+# via the OAuth 2.0 client-credentials grant on its own dedicated confidential
+# client below — no Resource Owner Password Credentials / realm users involved.
+#
+# NiFi's bearer-token/REST path resolves identity from the JWT's `sub` claim
+# regardless of `claim_identifying_user` (that setting only governs the browser
+# code-flow session) — confirmed empirically: an unmapped client-credentials
+# token resolves to the service account's raw Keycloak UUID. Each client below
+# therefore carries an `oidc-hardcoded-claim-mapper` forcing `sub` to a stable,
+# human-chosen string, which `initial_admin_identity` /
+# `identities.configAdapter` are set to match. Safe here specifically because
+# each client has exactly one consumer and no interactive login path to spoof.
+
+# Machine-to-machine client for config-adapter's NiFi REST calls.
+nifi-config-adapter:
+  name: NiFi Config Adapter
+  description: >-
+    CIVITAS NiFi client used by config-adapter to obtain a Keycloak token via
+    the OAuth 2.0 client-credentials grant.
+  subdomain: nifi-config-adapter
+  redirectPath: /
+  componentNamespaces:
+    - configAdapters
+  rawValues:
+    publicClient: false
+    bearerOnly: false
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: true
+    authorizationServicesEnabled: false
+    redirectUris: []
+    webOrigins: []
+    defaultClientScopes:
+      - basic
+      - profile
+      - roles
+    optionalClientScopes: []
+    protocolMappers:
+      - name: nifi-sub-override
+        protocol: openid-connect
+        protocolMapper: oidc-hardcoded-claim-mapper
+        consentRequired: false
+        config:
+          claim.name: sub
+          claim.value: nifi-config-adapter
+          jsonType.label: String
+          access.token.claim: 'true'
+          id.token.claim: 'false'
+          userinfo.token.claim: 'false'
+          introspection.token.claim: 'true'
+
+# Machine-to-machine client the `nifi-bootstrap` Job authenticates as to
+# provision NiFi's initial access policies. Its hardcoded `sub` is also NiFi's
+# `initial_admin_identity` (see `nifi.bootstrapAdminIdentity` /
+# `components/nifi/values/nifi/base-values.yaml.gotmpl`) — NiFi grants that
+# identity global admin policies on first boot.
+nifi-bootstrap:
+  name: NiFi Bootstrap
+  description: >-
+    CIVITAS NiFi client used by the nifi-bootstrap Job to obtain a Keycloak
+    token via the OAuth 2.0 client-credentials grant.
+  subdomain: nifi-bootstrap
+  redirectPath: /
+  rawValues:
+    publicClient: false
+    bearerOnly: false
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: true
+    authorizationServicesEnabled: false
+    redirectUris: []
+    webOrigins: []
+    defaultClientScopes:
+      - basic
+      - profile
+      - roles
+    optionalClientScopes: []
+    protocolMappers:
+      - name: nifi-sub-override
+        protocol: openid-connect
+        protocolMapper: oidc-hardcoded-claim-mapper
+        consentRequired: false
+        config:
+          claim.name: sub
+          claim.value: nifi-bootstrap
+          jsonType.label: String
+          access.token.claim: 'true'
+          id.token.claim: 'false'
+          userinfo.token.claim: 'false'
+          introspection.token.claim: 'true'

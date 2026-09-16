@@ -1,0 +1,10 @@
+---
+resources:
+  cpu: { min: "2", max: "4" }
+  memory: { limit: 12Gi }
+  storage:
+    contentRepo: { capacity: 50Gi }
+    databaseRepo: { capacity: 5Gi }
+    flowfileRepo: { capacity: 20Gi }
+    provenanceRepo: { capacity: 100Gi }
+    stateRepo: { capacity: 5Gi }

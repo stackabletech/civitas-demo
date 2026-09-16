@@ -44,4 +44,18 @@ if grep -q "strimzi" <<<"$(hf instance list 2>&1 || true)"; then fail "strimzi s
 ca=$(hf instance -l name=config-adapters-adapters build --embed-values 2>&1 || true)
 assert_contains "config-adapter bootstrap → Stackable service" "kafka-cluster-broker-default-bootstrap" "$ca"
 
+echo "== nifi addon"
+n=$(hf instance -l name=nifi-nifi template 2>&1 || true)
+assert_contains "NifiCluster kind" "kind: NifiCluster" "$n"
+assert_contains "NiFi 2.9.0" 'productVersion: "2.9.0"' "$n"
+assert_contains "initial admin nifi-bootstrap" "initialAdminUser: nifi-bootstrap" "$n"
+assert_contains "OIDC AuthenticationClass" "kind: AuthenticationClass" "$n"
+assert_contains "ES256" "nifi.security.user.oidc.preferred.jwsalgorithm: ES256" "$n"
+if grep -Eq "^[[:space:]]*zookeeperConfigMapName:" <<<"$n"; then fail "zookeeperConfigMapName set"; else pass "no zookeeperConfigMapName (Kubernetes clustering backend)"; fi
+ca=$(hf instance -l name=config-adapters-adapters build --embed-values 2>&1 || true)
+nifi_url=$(grep -A1 'name: NIFI_URL$' <<<"$ca" | grep -o 'value: .*' | head -1 || true)
+assert_contains "config-adapter NIFI_URL → Stackable pod" "nifi-nifi-node-default-0" "$nifi_url"
+b=$(hf instance -l name=nifi-bootstrap template 2>&1 || true)
+assert_contains "bootstrap job targets Stackable pod" "nifi-nifi-node-default-0" "$b"
+
 finish

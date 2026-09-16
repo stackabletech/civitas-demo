@@ -1,0 +1,31 @@
+---
+# v2's NiFi peers, selecting Stackable NiFi pods (NifiCluster nifi-nifi), plus the
+# ingress controller for the UI at https://nifi.<domain>.
+nifi:
+  podSelector:
+    app.kubernetes.io/name: nifi
+    app.kubernetes.io/instance: nifi-nifi
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: apisix
+          componentNamespace: apisix
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: config-adapter
+          componentNamespace: config-adapters
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: nifi-bootstrap
+          componentNamespace: nifi
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: nifi
+              app.kubernetes.io/instance: nifi-nifi
+          componentNamespace: nifi
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx

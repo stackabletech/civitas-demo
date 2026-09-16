@@ -1,0 +1,62 @@
+apiVersion: nifi.stackable.tech/v1alpha1
+kind: NifiCluster
+metadata:
+  name: {{ .Values.name }}
+  labels:
+    {{- include "nifi-cluster.labels" . | nindent 4 }}
+spec:
+  image:
+    productVersion: {{ .Values.productVersion | quote }}
+  clusterConfig:
+    # No zookeeperConfigMapName: Kubernetes clustering backend (state in Leases/ConfigMaps).
+    authentication:
+      - authenticationClass: {{ include "nifi-cluster.authClassName" . }}
+        oidc:
+          clientCredentialsSecret: {{ .Values.name }}-oidc-client
+    authorization:
+      standard:
+        accessPolicyProvider:
+          fileBased:
+            # Hardcoded `sub` of the nifi-bootstrap Keycloak client (see keycloak-clients.yaml).
+            initialAdminUser: {{ .Values.initialAdminUser }}
+    sensitiveProperties:
+      keySecret: {{ .Values.name }}-sensitive-property-key
+      autoGenerate: true
+    hostHeaderCheck:
+      allowAll: true
+  nodes:
+    config:
+      resources:
+        {{- toYaml .Values.resources | nindent 8 }}
+    configOverrides:
+      nifi.properties:
+        # The CIVITAS realm signs tokens with ES256 only.
+        nifi.security.user.oidc.preferred.jwsalgorithm: ES256
+    podOverrides:
+      spec:
+        initContainers:
+          - name: fetch-postgresql-jdbc
+            image: {{ .Values.jdbc.image }}
+            command:
+              - sh
+              - -c
+              - curl -fsSL -o /drivers/postgresql.jar https://jdbc.postgresql.org/download/postgresql-{{ .Values.jdbc.postgresqlVersion }}.jar
+            volumeMounts:
+              - name: jdbc-drivers
+                mountPath: /drivers
+            resources:
+              requests: { cpu: 10m, memory: 16Mi }
+              limits: { cpu: 100m, memory: 64Mi }
+        containers:
+          - name: nifi
+            volumeMounts:
+              # Same path as civitas-core-deployment's NiFi; config-adapter flows reference it.
+              - name: jdbc-drivers
+                mountPath: /opt/nifi/drivers
+                readOnly: true
+        volumes:
+          - name: jdbc-drivers
+            emptyDir: {}
+    roleGroups:
+      default:
+        replicas: {{ .Values.replicas }}

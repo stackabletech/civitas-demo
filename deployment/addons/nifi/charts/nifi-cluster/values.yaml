@@ -1,0 +1,32 @@
+name: nifi-nifi
+productVersion: "2.9.0"
+replicas: 1
+initialAdminUser: nifi-bootstrap
+oidc:
+  hostname: idm.civitas.test
+  port: 443
+  realm: dev
+  # Name of the generated Keycloak client secret (key client-secret) for client `nifi`.
+  clientId: nifi
+  clientSecretName: keycloak-client-nifi
+  # SecretClass providing the CA that signed Keycloak's certificate; empty = webPki.
+  caSecretClass: ""
+  # Secret with ca.crt to publish for caSecretClass (copied via lookup).
+  caSourceSecret: custom-ca-cert
+jdbc:
+  image: docker.io/badouralix/curl-jq@sha256:f0370deaaf07dc61af9bae7474cbcffee62be5b3e83e1f6dd5d25d340e6c16c4
+  postgresqlVersion: "42.7.4"
+resources:
+  cpu: { min: 500m, max: "2" }
+  memory: { limit: 3Gi }
+  storage:
+    contentRepo: { capacity: 2Gi }
+    databaseRepo: { capacity: 1Gi }
+    flowfileRepo: { capacity: 2Gi }
+    provenanceRepo: { capacity: 2Gi }
+    stateRepo: { capacity: 1Gi }
+ingress:
+  enabled: false
+  host: nifi.civitas.test
+  className: nginx
+  clusterIssuer: selfsigned-ca

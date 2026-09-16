@@ -1,0 +1,27 @@
+apiVersion: authentication.stackable.tech/v1alpha1
+kind: AuthenticationClass
+metadata:
+  name: {{ include "nifi-cluster.authClassName" . }}
+  labels:
+    {{- include "nifi-cluster.labels" . | nindent 4 }}
+spec:
+  provider:
+    oidc:
+      hostname: {{ .Values.oidc.hostname }}
+      port: {{ .Values.oidc.port }}
+      rootPath: /realms/{{ .Values.oidc.realm }}
+      scopes:
+        - openid
+        - email
+        - profile
+      principalClaim: preferred_username
+      providerHint: Keycloak
+      tls:
+        verification:
+          server:
+            caCert:
+              {{- if .Values.oidc.caSecretClass }}
+              secretClass: {{ .Values.oidc.caSecretClass }}
+              {{- else }}
+              webPki: {}
+              {{- end }}

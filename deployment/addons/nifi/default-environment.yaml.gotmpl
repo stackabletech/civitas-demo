@@ -1,0 +1,19 @@
+---
+{{- $ns := include "civitas.namespace" (dict "global" .Values.global "suffix" "nifi") }}
+nifi:
+  nifi:
+    enabled: true
+    namespace: {{ $ns }}
+    productVersion: "2.9.0"
+    nodeCount: 1
+    initialAdminEmail: {{ .Values.global.initialUserEmail }}
+    bootstrapAdminIdentity: nifi-bootstrap
+    postgresqlJdbcVersion: "42.7.4"
+    # Consumed by config-adapter (civitas-core-deployment patch) and the bootstrap Job.
+    url: https://nifi-nifi-node-default-0.nifi-nifi-node-default-headless.{{ $ns }}.svc.cluster.local:8443
+    ingress:
+      enabled: true
+      subdomain: nifi
+  bootstrap:
+    enabled: true
+    namespace: {{ $ns }}
