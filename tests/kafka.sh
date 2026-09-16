@@ -21,4 +21,19 @@ kubectl -n "$NS" exec "$POD" -c kafka -- bash -c \
 got=$(kubectl -n "$NS" exec "$POD" -c kafka -- bash -c \
   "/stackable/kafka/bin/kafka-console-consumer.sh --bootstrap-server $BS --topic $TOPIC --from-beginning --timeout-ms 20000 2>/dev/null" | grep -x "$MSG" || true)
 assert_eq "consume" "$MSG" "$got"
+
+echo "== kafka-ui"
+kubectl -n "$NS" rollout status deploy/kafka-ui --timeout=300s >/dev/null
+port=$((20000 + RANDOM % 10000))
+kubectl -n "$NS" port-forward svc/kafka-ui "$port:80" >/dev/null 2>&1 &
+pf=$!
+clusters=""
+for i in $(seq 1 15); do
+  clusters=$(curl -s "http://127.0.0.1:$port/api/clusters" 2>/dev/null || true)
+  [ -n "$clusters" ] && break
+  sleep 1
+done
+kill "$pf" 2>/dev/null || true
+status=$(yq -p json '.[] | select(.name == "kafka-cluster") | .status' <<<"$clusters" 2>/dev/null || true)
+assert_eq "kafka-ui shows kafka-cluster as online" "online" "$status"
 finish

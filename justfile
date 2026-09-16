@@ -38,7 +38,7 @@ setup:
     set -euo pipefail
     dir="$CIVITAS_CORE_DEPLOYMENT"
     if [ ! -d "$dir" ]; then
-      git clone --quiet --depth 1 --branch {{v2_version}} {{v2_repo}} "$dir"
+      git -c advice.detachedHead=false clone --quiet --depth 1 --branch {{v2_version}} {{v2_repo}} "$dir"
       echo "cloned civitas-core-deployment {{v2_version}} to $dir"
     fi
     if grep -q 'nifi.nifi "url"' "$dir/components/config-adapters/values/adapters/base-values.yaml.gotmpl"; then

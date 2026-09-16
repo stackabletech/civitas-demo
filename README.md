@@ -141,6 +141,12 @@ kubectl -n dev exec kafka-cluster-broker-default-0 -c kafka -- \
   --bootstrap-server kafka-cluster-broker-default-bootstrap:9092
 ```
 
+kafka-ui (web page for Kafka), then open http://localhost:8080:
+
+```bash
+kubectl -n dev port-forward svc/kafka-ui 8080:80
+```
+
 NiFi status and logs:
 
 ```bash
