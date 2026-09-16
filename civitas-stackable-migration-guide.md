@@ -1,3 +1,7 @@
+> **Superseded.** Early brainstorm without access to the code. It pins outdated versions
+> (SDP 24.7, NiFi 1.x, ZooKeeper) and non-existent CRD fields. See `README.md` and
+> `docs/superpowers/specs/2026-09-16-civitas-stackable-demo-design.md` for what was built.
+
 # Migration & Architecture Guide: Integrating Stackable Data Platform into CIVITAS/CORE
 
 ## 1. Executive Overview
@@ -247,3 +251,4 @@ kubectl create namespace demo-instance
 # Step 3: Deploy Stackable Data Services and CIVITAS Platform
 helmfile -f deployment/helmfile-instance.yaml.gotmpl sync   -e default   --state-values-set-string instanceSlug=demo-instance
 ```
+
