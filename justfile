@@ -1,6 +1,9 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-export CIVITAS_CORE_DEPLOYMENT := env("CIVITAS_CORE_DEPLOYMENT", justfile_directory() / ".." / "civitas-core-deployment")
+# civitas-core-deployment version this demo was tested with. `just setup` clones it.
+v2_repo := "https://gitlab.com/civitas-connect/civitas-core/civitas-core-v2/civitas-core-deployment.git"
+v2_version := "v2.0-rc2"
+export CIVITAS_CORE_DEPLOYMENT := env("CIVITAS_CORE_DEPLOYMENT", justfile_directory() / ".civitas-core-deployment")
 cluster := env("CLUSTER", "kind")
 env := "local"
 values := "values/default-instance.yaml"
@@ -11,7 +14,7 @@ default:
 
 # --- setup -------------------------------------------------------------------
 
-# Check that all tools and civitas-core-deployment are there
+# Check that all tools are installed and `just setup` was run
 check-tools:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -24,19 +27,26 @@ check-tools:
       k3d)  command -v k3d  >/dev/null || { echo "missing: k3d";  missing=1; } ;;
     esac
     helm plugin list | grep -q '^diff' || { echo "missing: helm-diff (helm plugin install https://github.com/databus23/helm-diff)"; missing=1; }
-    [ -f "$CIVITAS_CORE_DEPLOYMENT/helmfile-root.yaml.gotmpl" ] || { echo "civitas-core-deployment not found at $CIVITAS_CORE_DEPLOYMENT (set CIVITAS_CORE_DEPLOYMENT)"; missing=1; }
     grep -q 'nifi.nifi "url"' "$CIVITAS_CORE_DEPLOYMENT/components/config-adapters/values/adapters/base-values.yaml.gotmpl" 2>/dev/null \
-      || { echo "civitas-core-deployment lacks the NiFi URL patch: run 'just apply-v2-patch'"; missing=1; }
+      || { echo "civitas-core-deployment missing or not patched at $CIVITAS_CORE_DEPLOYMENT: run 'just setup'"; missing=1; }
     if [ "$missing" = 1 ]; then echo "Install hints: brew install helmfile yq kind k3d gettext"; exit 1; fi
     echo "All tools present."
 
-# Add the needed NiFi URL patch to civitas-core-deployment
-apply-v2-patch:
+# Get civitas-core-deployment and add the NiFi URL patch (run once)
+setup:
     #!/usr/bin/env bash
     set -euo pipefail
-    f="$CIVITAS_CORE_DEPLOYMENT/components/config-adapters/values/adapters/base-values.yaml.gotmpl"
-    if grep -q 'nifi.nifi "url"' "$f"; then echo "patch already applied"; exit 0; fi
-    git -C "$CIVITAS_CORE_DEPLOYMENT" am "{{justfile_directory()}}/patches/civitas-core-deployment/0001-configurable-nifi-url.patch"
+    dir="$CIVITAS_CORE_DEPLOYMENT"
+    if [ ! -d "$dir" ]; then
+      git clone --quiet --depth 1 --branch {{v2_version}} {{v2_repo}} "$dir"
+      echo "cloned civitas-core-deployment {{v2_version}} to $dir"
+    fi
+    if grep -q 'nifi.nifi "url"' "$dir/components/config-adapters/values/adapters/base-values.yaml.gotmpl"; then
+      echo "patch already applied"
+    else
+      git -C "$dir" apply "{{justfile_directory()}}/patches/civitas-core-deployment/0001-configurable-nifi-url.patch"
+      echo "patch applied"
+    fi
 
 # Link our deployment folder into civitas-core-deployment
 link:
@@ -44,13 +54,10 @@ link:
     set -euo pipefail
     target="$CIVITAS_CORE_DEPLOYMENT/deployment"
     src="{{justfile_directory()}}/deployment"
-    if [ -L "$target" ]; then
-      if [ "$(readlink -f "$target")" = "$(readlink -f "$src")" ]; then echo "already linked: $target"; exit 0; fi
-      echo "ERROR: $target already links to $(readlink "$target")"; exit 1
-    elif [ -e "$target" ]; then
-      echo "ERROR: $target exists and is not a symlink; move it away first"; exit 1
+    if [ -e "$target" ] && [ ! -L "$target" ]; then
+      echo "ERROR: $target exists and is not a link; move it away first"; exit 1
     fi
-    ln -s "$src" "$target"
+    ln -sfn "$src" "$target"
     echo "linked $target -> $src"
 
 # Remove that link again
@@ -70,7 +77,7 @@ cluster-down:
 
 # --- deploy ------------------------------------------------------------------
 
-# Do everything: check, cluster, link, operators, platform
+# Do everything: check, cluster, link, operators, platform (run `just setup` first)
 deploy: check-tools cluster-up link operators instance
     @echo "Deployed. Run 'just smoke-test' and 'just credentials'."
 

@@ -1,2 +1,3 @@
 .claude/
+/.civitas-core-deployment/
 .test-values-*.yaml

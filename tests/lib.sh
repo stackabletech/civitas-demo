@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-export CIVITAS_CORE_DEPLOYMENT="${CIVITAS_CORE_DEPLOYMENT:-$ROOT/../civitas-core-deployment}"
+export CIVITAS_CORE_DEPLOYMENT="${CIVITAS_CORE_DEPLOYMENT:-$ROOT/.civitas-core-deployment}"
 FAILED=0
 
 pass() { printf '  \033[32mPASS\033[0m %s\n' "$1"; }

@@ -15,13 +15,15 @@ keeps its cluster state in Kubernetes.
 
 ## How it works
 
-civitas-core-deployment has a folder `deployment/addons/`. If a component is found there,
-it is used instead of the normal one. This project brings such a folder and links it into
-civitas-core-deployment with `just link`.
+`just setup` downloads civitas-core-deployment (version `v2.0-rc2`) into the hidden folder
+`.civitas-core-deployment/`. civitas-core-deployment looks for extra components in its
+folder `deployment/addons/`. If it finds one there, it uses it instead of its own. This
+project brings such a folder and links it in with `just link`.
 
 ```
 civitas-stackable-demo/
 ├── justfile                        all commands
+├── .civitas-core-deployment/       downloaded by `just setup` (not in git)
 ├── helmfile-operators.yaml.gotmpl  installs the operators (once per cluster)
 ├── helmfile-instance.yaml.gotmpl   installs the platform
 ├── values/default-instance.yaml    your settings
@@ -35,13 +37,12 @@ civitas-stackable-demo/
 ```
 
 civitas-core-deployment needs one small change, so config-adapter can find the new
-NiFi. It is in `patches/` and `just apply-v2-patch` adds it.
+NiFi. It is in `patches/` and `just setup` adds it.
 
 ## What you need
 
 - `kubectl`, `helm` with the `helm-diff` plugin, `helmfile`, `yq`, `envsubst`, [`just`](https://github.com/casey/just)
-- `kind` or `k3d`, and Docker
-- civitas-core-deployment in the folder next to this one (or set `CIVITAS_CORE_DEPLOYMENT` to its path)
+- `git`, `kind` or `k3d`, and Docker
 - About 8 CPU cores and 20 GB memory. The first install takes 20 to 30 minutes.
 
 ```bash
@@ -52,11 +53,14 @@ helm plugin install https://github.com/databus23/helm-diff   # helm 4 needs --ve
 ## Start
 
 ```bash
+just setup                # once: download civitas-core-deployment and patch it
 just check-tools          # anything missing?
-just apply-v2-patch       # only if check-tools asks for it
 just deploy               # cluster, operators and platform
 just smoke-test           # is everything working?
 ```
+
+Already have your own civitas-core-deployment checkout? Set `CIVITAS_CORE_DEPLOYMENT` to
+its path before `just setup`. It must be close to `v2.0-rc2`, or the patch may not fit.
 
 `just deploy` creates a kind cluster. Use `CLUSTER=k3d just deploy` for k3d, or
 `CLUSTER=none just deploy` for a cluster you already have. Your own cluster needs
@@ -80,6 +84,7 @@ because Keycloak does not accept other ports.
 
 | Command | What it does |
 |---|---|
+| `just setup` | Download and patch civitas-core-deployment (once) |
 | `just deploy` | Everything: cluster, operators, platform |
 | `just operators` | Install or update the operators |
 | `just instance` | Install or update the platform |
@@ -95,9 +100,19 @@ because Keycloak does not accept other ports.
 Want to run helmfile yourself? Set the path first:
 
 ```bash
-export CIVITAS_CORE_DEPLOYMENT=$(realpath ../civitas-core-deployment)
+export CIVITAS_CORE_DEPLOYMENT=$(realpath .civitas-core-deployment)
 helmfile -f helmfile-instance.yaml.gotmpl -e local -l component=nifi apply
 ```
+
+## Share it
+
+Send the folder without `.civitas-core-deployment/` and `.git`. The easiest way:
+
+```bash
+git archive --format=zip -o ../civitas-stackable-demo.zip HEAD
+```
+
+The other person unzips it, installs the tools and runs `just setup` and `just deploy`.
 
 ## Settings
 
@@ -137,6 +152,7 @@ kubectl -n dev logs nifi-nifi-node-default-0 -c nifi
 
 | Problem | Fix |
 |---|---|
+| `run 'just setup'` from check-tools | Run `just setup`. |
 | `no matches for kind KafkaCluster` | Operators missing. Run `just operators`. |
 | `requiredEnv CIVITAS_CORE_DEPLOYMENT` | Set `CIVITAS_CORE_DEPLOYMENT` (see Commands). |
 | First `nifi-bootstrap` pod shows `Error` | Normal. NiFi needs 2 to 3 minutes to start, the Job tries again. |
@@ -147,7 +163,6 @@ kubectl -n dev logs nifi-nifi-node-default-0 -c nifi
 
 ## Differences to civitas-core-deployment
 
-- Kafka 4.2.1 and KRaft are still "experimental" in Stackable 26.7.
 - Linkerd (service mesh) and Kyverno (policies) are turned off. Their rules only know Strimzi.
 - The NiFi web page is reachable at `https://nifi.civitas.test`. Before, it was internal only.
 - The unused Kafka topic `kafkasql-journal` is gone. Topics are created when first used.
