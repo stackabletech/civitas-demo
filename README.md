@@ -32,6 +32,7 @@ civitas-stackable-demo/
 │   ├── kafka/                      Kafka and kafka-ui
 │   └── nifi/                       NiFi, Keycloak login and web page
 ├── clusters/                       create a kind or k3d cluster
+├── demo/                           demo pipeline (`just demo`)
 ├── patches/                        one small change for civitas-core-deployment
 └── tests/                          check scripts
 ```
