@@ -154,6 +154,21 @@ kubectl -n dev get nificluster nifi-nifi
 kubectl -n dev logs nifi-nifi-node-default-0 -c nifi
 ```
 
+## End-to-end test
+
+`just system-test` runs the "Hero Case" test of civitas-core-deployment in a container. It
+creates a data structure, a data source and a dataset with two pipelines, using the portal
+API and a real browser. You need `just create-admin-user` first and port 443 (see above).
+The report ends up in `.civitas-core-deployment/tests/system/results/report.html`.
+
+With civitas-core-deployment `v2.0-rc2` it does not pass all steps yet. This is not caused
+by Stackable:
+
+- 34 steps pass. Then the test gets stuck on a "save before leaving?" dialog in the pipeline editor.
+- If you release the dataset by hand, the whole saga runs over Kafka (FROST, APISIX, PostGIS,
+  GeoServer). The NiFi step then stops in config-adapter before it talks to NiFi, because the
+  test pipeline uses an old ID format (`urn:core:datastructure:...`).
+
 ## Problems
 
 | Problem | Fix |
