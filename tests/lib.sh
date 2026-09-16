@@ -27,3 +27,17 @@ hf() { # layer (operators|instance), remaining args passed to helmfile
 }
 
 instance_ns() { cat "$ROOT/values/default-instance.yaml" | yq '.global.instanceSlug'; }
+
+# Run a shell script in a throwaway curl/jq pod and print its stdout.
+# `kubectl run --rm -i` can lose the output of short-lived pods, so wait for
+# completion and read the logs instead.
+# usage: in_cluster NAMESPACE LABELS SCRIPT   (LABELS: k=v,k=v or "")
+in_cluster() {
+  local ns=$1 labels=$2 script=$3 pod="check-$RANDOM$RANDOM"
+  kubectl -n "$ns" run "$pod" --restart=Never --image=docker.io/badouralix/curl-jq:alpine \
+    ${labels:+--labels "$labels"} --command -- sh -c "$script" >/dev/null
+  kubectl -n "$ns" wait --for=jsonpath='{.status.phase}'=Succeeded "pod/$pod" --timeout=180s >/dev/null 2>&1 \
+    || kubectl -n "$ns" wait --for=jsonpath='{.status.phase}'=Failed "pod/$pod" --timeout=5s >/dev/null 2>&1 || true
+  kubectl -n "$ns" logs "$pod" 2>/dev/null || true
+  kubectl -n "$ns" delete pod "$pod" --wait=false >/dev/null 2>&1 || true
+}

@@ -144,7 +144,7 @@ credentials:
       echo "NiFi UI user not created yet: run 'just create-admin-user'"
     fi
 
-# Create the realm user global.initialUserEmail (NiFi admin via nifi-bootstrap) with a generated password
+# Create/enable the realm user global.initialUserEmail (NiFi admin via nifi-bootstrap) with a generated password
 create-admin-user:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -166,6 +166,9 @@ create-admin-user:
         \$kc create users -r '$ns' -s username='$email' -s email='$email' -s enabled=true -s emailVerified=true -s firstName=Civitas -s lastName=Admin
         id=\$(\$kc get users -r '$ns' -q exact=true -q username='$email' --fields id --format csv --noquotes | head -n1)
       fi
+      # civitas-core-deployment may already have created this user with VERIFY_EMAIL pending;
+      # the demo has no SMTP, so mark the email verified and clear required actions.
+      \$kc update users/\$id -r '$ns' -s emailVerified=true -s 'requiredActions=[]'
       \$kc set-password -r '$ns' --userid \"\$id\" --new-password '$pw'
     "
     echo "Created/updated $email; see 'just credentials'."

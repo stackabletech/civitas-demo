@@ -13,7 +13,7 @@ assert_eq "ClusterIssuer selfsigned-ca Ready" "True" "${issuer:-missing}"
 
 echo "== in-cluster DNS"
 svc_ip=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o jsonpath='{.spec.clusterIP}' 2>/dev/null || true)
-resolved=$(kubectl run dns-check-$RANDOM --rm -i --restart=Never --image=busybox:1.36 --quiet -- nslookup "idm.$DOMAIN" 2>/dev/null | awk '/^Address: /{print $2}' | tail -1 || true)
+resolved=$(in_cluster default "" "nslookup idm.$DOMAIN" | awk '/^Address: /{print $2}' | tail -1 || true)
 assert_eq "idm.$DOMAIN resolves to ingress controller" "$svc_ip" "$resolved"
 
 finish
