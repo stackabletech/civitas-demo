@@ -8,7 +8,7 @@ spec:
   image:
     productVersion: {{ .Values.productVersion | quote }}
   clusterConfig:
-    # No zookeeperConfigMapName: Kubernetes clustering backend (state in Leases/ConfigMaps).
+    # No zookeeperConfigMapName: Kubernetes clustering backend.
     authentication:
       - authenticationClass: {{ include "nifi-cluster.authClassName" . }}
         oidc:
@@ -17,7 +17,7 @@ spec:
       standard:
         accessPolicyProvider:
           fileBased:
-            # Hardcoded `sub` of the nifi-bootstrap Keycloak client (see keycloak-clients.yaml).
+            # Hardcoded `sub` of the nifi-bootstrap Keycloak client.
             initialAdminUser: {{ .Values.initialAdminUser }}
     sensitiveProperties:
       keySecret: {{ .Values.name }}-sensitive-property-key
@@ -50,7 +50,7 @@ spec:
         containers:
           - name: nifi
             volumeMounts:
-              # Same path as civitas-core-deployment's NiFi; config-adapter flows reference it.
+              # Driver path expected by config-adapter flows.
               - name: jdbc-drivers
                 mountPath: /opt/nifi/drivers
                 readOnly: true

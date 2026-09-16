@@ -1,13 +1,11 @@
 ---
-# User-facing configuration of the CIVITAS/CORE + Stackable demo.
-# Both entrypoints pass this file as state values into civitas-core-deployment's
-# helmfile-root.yaml.gotmpl, so every key here overrides v2's
-# defaults/environment/global.yaml and the addons' default-environment files.
+# Overrides civitas-core-deployment's defaults/environment/global.yaml and the
+# addons' default-environment files.
 global:
   domain: civitas.test
-  # Namespace AND Keycloak realm name (v2 singleNamespace mode).
+  # Namespace and Keycloak realm.
   instanceSlug: dev
-  # Realm user that nifi-bootstrap grants full NiFi admin; see `just create-admin-user`.
+  # Gets NiFi admin policies; see `just create-admin-user`.
   initialUserEmail: admin@civitas.test
   profile: development
   serviceMesh:
@@ -26,5 +24,5 @@ nifi:
   nifi:
     productVersion: "2.9.0"
     ingress:
-      # Expose the NiFi UI at https://nifi.<domain> (v2 keeps NiFi internal-only).
+      # NiFi UI at https://nifi.<domain>
       enabled: true

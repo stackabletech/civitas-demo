@@ -18,10 +18,8 @@ image:
   digest: {{ .Values.images.nifi.bootstrap.digest }}
 
 
-# NiFi REST API endpoint: pod FQDN of the Stackable NiFi node (nifi.nifi.url).
 nifi:
   url: {{ $nifi.url | quote }}
-  # Certificate issued by the Stackable secret-operator `tls` SecretClass; not mounted here.
   insecureSkipVerify: true
 
 # Keycloak token endpoint (in-cluster, plain HTTP — TLS terminated by APISIX externally).

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bring-your-own cluster: nothing is installed, prerequisites are only checked.
+# Existing cluster: only check the prerequisites.
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 cat <<'EOF'

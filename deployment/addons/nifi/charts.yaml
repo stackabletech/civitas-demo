@@ -3,5 +3,4 @@ nifi:
   nifi:
     chart: charts/nifi-cluster
   bootstrap:
-    # Reuse civitas-core-deployment's bootstrap Job chart unchanged.
     chart: ../../../components/nifi/charts/nifi-bootstrap

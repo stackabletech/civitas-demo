@@ -1,7 +1,7 @@
 # CIVITAS/CORE on Stackable Kafka & NiFi
 
 This project deploys the **full CIVITAS/CORE v2 platform** from
-[`civitas-core-deployment`](../civitas-core-deployment) with two building blocks swapped
+[`civitas-core-deployment`](../civitas-core-deployment) ("v2" below) with two building blocks swapped
 for the [Stackable Data Platform](https://docs.stackable.tech/) (SDP) 26.7:
 
 - **Strimzi Kafka → Stackable `KafkaCluster`** (Kafka 4.2.1, KRaft)
@@ -12,7 +12,7 @@ via Kubernetes Leases/ConfigMaps and Stackable Kafka runs in KRaft mode. Everyth
 (Keycloak, APISIX, PostgreSQL, FROST, config-adapter, portal, GeoServer, Superset, …) is
 deployed unchanged from `civitas-core-deployment`.
 
-It was built and verified on a single-node kind cluster (see [Verification](#verification)).
+Verified on a single-node kind cluster (see [Verification](#verification)).
 
 ---
 
@@ -36,9 +36,9 @@ It was built and verified on a single-node kind cluster (see [Verification](#ver
 | Shared operators | CloudNativePG + Strimzi | CloudNativePG + Stackable commons/secret/listener/kafka/nifi |
 | Service mesh / runtime policies | Linkerd + Kyverno | disabled (see [Deviations](#deviations-from-civitas-core-deployment)) |
 
-The Stackable clusters deliberately reuse civitas-core-deployment's release names
-(`kafka-cluster`, `nifi-nifi`), so pod labels such as `app.kubernetes.io/instance: nifi-nifi`
-still match the NetworkPolicies of the other v2 components (e.g. PostgreSQL allowing NiFi).
+The Stackable clusters reuse civitas-core-deployment's release names (`kafka-cluster`,
+`nifi-nifi`), so pod labels such as `app.kubernetes.io/instance: nifi-nifi` still match the
+NetworkPolicies of the other components (e.g. PostgreSQL allowing NiFi).
 
 ---
 
@@ -131,17 +131,19 @@ three on any cluster.
 
 ### Browser access
 
-The platform uses `https://<name>.civitas.test` hostnames (self-signed CA from
-`civitas-core-deployment/dev-deployment/.ssl/civitas.crt` – import it into your browser to
-avoid warnings).
+The UIs use `https://<name>.civitas.test` and a self-signed CA
+(`civitas-core-deployment/dev-deployment/.ssl/civitas.crt`; import it into the browser or
+accept the warning). Logins only work on port 443, because the Keycloak clients register
+redirect URIs without a port.
 
-- **kind created by `just cluster-up`** maps host ports 80/443 → run `just add-hosts`
-  (appends `idm portal api dashboard nifi .civitas.test` to `/etc/hosts`, needs sudo) and
-  open `https://nifi.civitas.test/nifi`, `https://portal.civitas.test`.
-- **A kind cluster created without port mappings** (e.g. plain `kind create cluster`) can
-  only use `just port-forward` (`https://nifi.civitas.test:8443`). Pages load, but OIDC
-  logins fail because Keycloak clients only register port-less/`:443` redirect URIs.
-  Recreate the cluster with `just cluster-down && just deploy` for full browser access.
+1. `just add-hosts` maps `idm portal api dashboard nifi .civitas.test` to 127.0.0.1.
+2. Make port 443 reach ingress-nginx:
+   - kind cluster created by `just cluster-up`: already mapped.
+   - any other cluster (e.g. plain `kind create cluster`): keep `just port-forward 443`
+     running (sudo). `just port-forward` without argument uses 8443, where pages load but
+     logins fail.
+3. `just create-admin-user`, then `just credentials` for the password.
+4. Open `https://nifi.civitas.test/nifi` and log in as `admin@civitas.test` through Keycloak.
 
 ---
 
@@ -157,7 +159,7 @@ avoid warnings).
 | `just status` | Operators, Stackable resources, pods and ingresses |
 | `just credentials` | Keycloak admin and NiFi demo user |
 | `just create-admin-user` | Password for `global.initialUserEmail`, clears pending required actions |
-| `just add-hosts` / `just port-forward` | Browser access helpers |
+| `just add-hosts` / `just port-forward [port]` | Browser access helpers (`443` for logins, sudo) |
 | `just test-render` | Offline helmfile render checks |
 | `just test-cluster` / `test-operators` / `test-kafka` / `test-nifi` | Checks per layer |
 | `just smoke-test` | All of the above plus config-adapter ↔ Kafka/NiFi and portal |
@@ -296,7 +298,3 @@ Addon value keys (override in `values/default-instance.yaml` or an `EXTRA_VALUES
 5. config-adapter ready, consumer group `config-adapter-group` on the Stackable Kafka, REST
    access to NiFi as `nifi-config-adapter`, no NiFi errors in its logs.
 6. Portal responds through the ingress.
-
-Design and plan: `docs/superpowers/specs/2026-09-16-civitas-stackable-demo-design.md`,
-`docs/superpowers/plans/2026-09-16-civitas-stackable-demo.md`.
-The earlier brainstorm `civitas-stackable-migration-guide.md` is superseded.

@@ -1,6 +1,6 @@
 ---
-# This addon is reached through the deployment/ symlink, which helmfile resolves
-# physically; paths into civitas-core-deployment therefore use CIVITAS_CORE_DEPLOYMENT.
+# helmfile resolves the deployment/ symlink physically, so paths into
+# civitas-core-deployment must be absolute.
 bases:
   - '{{ requiredEnv "CIVITAS_CORE_DEPLOYMENT" }}/defaults/helm-defaults.yaml'
 ---
@@ -48,7 +48,6 @@ releases:
     {{- if ne $repoUrl "" }}
     chart: cc2-{{ $chartCfg.chart }}
     {{- else if hasPrefix "../../../" $chartCfg.chart }}
-    # Chart inside civitas-core-deployment (see comment on bases above).
     chart: {{ requiredEnv "CIVITAS_CORE_DEPLOYMENT" }}/{{ trimPrefix "../../../" $chartCfg.chart }}
     {{- else }}
     chart: {{ $chartCfg.chart }}
@@ -88,6 +87,8 @@ releases:
       {{- end }}
     {{- end }}
     {{- end }}
+    # Profile values files are optional.
+    missingFileHandler: Debug
     values:
       - values/{{ $part.name }}/base-values.yaml.gotmpl
       - values/{{ $part.name }}/{{ $root.global.profile }}-values.yaml.gotmpl

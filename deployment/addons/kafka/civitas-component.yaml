@@ -1,6 +1,5 @@
 ---
-# Replaces civitas-core-deployment/components/kafka (Strimzi) with a Stackable KafkaCluster.
-# The kafka-operator lives in deployment/addons/stackable (operators layer).
+# Replaces components/kafka (Strimzi) with a Stackable KafkaCluster.
 component: kafka
 parts:
   - name: cluster

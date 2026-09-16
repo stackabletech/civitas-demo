@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# Distribution-independent cluster prerequisites: ingress-nginx, cert-manager and the
-# CIVITAS self-signed CA ClusterIssuer (CA material from civitas-core-deployment).
+# ingress-nginx, cert-manager and the CIVITAS CA ClusterIssuer for any cluster.
 set -euo pipefail
 
 : "${CIVITAS_CORE_DEPLOYMENT:?}"
 DOMAIN="${DOMAIN:-civitas.test}"
 INGRESS_NGINX_VERSION="${INGRESS_NGINX_VERSION:-4.15.1}"
 CERT_MANAGER_VERSION="${CERT_MANAGER_VERSION:-v1.21.2}"
-INGRESS_EXTRA_ARGS=("$@")   # e.g. --set controller.hostPort.enabled=true
+INGRESS_EXTRA_ARGS=("$@")
 
 helm upgrade --install ingress-nginx ingress-nginx \
   --repo https://kubernetes.github.io/ingress-nginx --version "$INGRESS_NGINX_VERSION" \
@@ -32,4 +31,3 @@ CA_KEY=$(base64 -w0 < "$SSL/civitas.key")
 export DOMAIN CA_CERT CA_KEY
 envsubst '${DOMAIN} ${CA_CERT} ${CA_KEY}' < "$CIVITAS_CORE_DEPLOYMENT/dev-deployment/ca-template.yaml" | kubectl apply -f -
 kubectl wait --for=condition=Ready clusterissuer/selfsigned-ca --timeout=120s
-echo "Common bootstrap done."

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# End-to-end: prerequisites, operators, Kafka, NiFi, config-adapter on Kafka, portal.
+# End-to-end checks against the running deployment.
 source "$(dirname "$0")/lib.sh"
 NS=$(instance_ns)
 DOMAIN=$(cat "$ROOT/values/default-instance.yaml" | yq '.global.domain')
@@ -16,11 +16,11 @@ POD=$(kubectl -n "$NS" get pod -l app.kubernetes.io/name=kafka,app.kubernetes.io
 BS=$(hf instance -l name=config-adapters-adapters build --embed-values 2>/dev/null | grep -o 'kafka-cluster[a-z-]*bootstrap' | head -1).$NS.svc.cluster.local:9092
 groups=$(kubectl -n "$NS" exec "$POD" -c kafka -- /stackable/kafka/bin/kafka-consumer-groups.sh --bootstrap-server "$BS" --list 2>/dev/null || true)
 assert_contains "consumer group config-adapter-group on Stackable Kafka" "config-adapter-group" "$groups"
-# Same identity, network path and endpoints config-adapter uses (NIFI_OIDC_CLIENT_ID=nifi-config-adapter).
+# Same identity and endpoints as config-adapter.
 SECRET=$(kubectl -n "$NS" get secret keycloak-client-nifi-config-adapter -o jsonpath='{.data.client-secret}' | base64 -d)
 NIFI_URL="https://nifi-nifi-node-default-0.nifi-nifi-node-default-headless.$NS.svc.cluster.local:8443"
 TOKEN_URL="http://keycloak-app-keycloakx-http.$NS.svc.cluster.local/realms/$NS/protocol/openid-connect/token"
-# NiFi replicates API calls to its node(s); retry to ride out a transient replication timeout.
+# Retry: NiFi request replication can time out right after a restart.
 code=$(in_cluster "$NS" app.kubernetes.io/name=config-adapter,app.kubernetes.io/instance=config-adapters-adapters "
     T=\$(curl -fsS -d grant_type=client_credentials -d client_id=nifi-config-adapter -d client_secret='$SECRET' '$TOKEN_URL' | jq -r .access_token)
     for i in 1 2 3; do

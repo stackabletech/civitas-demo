@@ -1,4 +1,4 @@
-# kind cluster for the CIVITAS/CORE Stackable demo: host ports 80/443 reach ingress-nginx.
+# Host ports 80/443 reach ingress-nginx.
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:

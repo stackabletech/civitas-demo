@@ -1,5 +1,5 @@
 {{- if .Values.oidc.caSecretClass }}
-# CA that signed Keycloak's ingress certificate, published for the Stackable secret-operator.
+# CA of Keycloak's ingress certificate, for the OIDC connection.
 apiVersion: secrets.stackable.tech/v1alpha1
 kind: SecretClass
 metadata:
@@ -25,6 +25,6 @@ type: Opaque
 data:
   ca.crt: {{ index $src.data "ca.crt" }}
 {{- else }}
-# Secret {{ .Values.oidc.caSourceSecret }} not found (helm template or prepare hook not run yet).
+# Secret {{ .Values.oidc.caSourceSecret }} not found.
 {{- end }}
 {{- end }}

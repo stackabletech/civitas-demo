@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# NiFi: cluster ready, bootstrap Job done, REST API accepts Keycloak client-credentials
-# tokens, UI ingress redirects to Keycloak.
+# NiFi: cluster, bootstrap Job, REST with a Keycloak token, UI ingress and login.
 source "$(dirname "$0")/lib.sh"
 NS=$(instance_ns)
 DOMAIN=$(cat "$ROOT/values/default-instance.yaml" | yq '.global.domain')
@@ -31,6 +30,7 @@ out=$(in_cluster ingress-nginx "" "
 assert_contains "NiFi UI via ingress" "ui=200" "$out"
 assert_contains "NiFi login redirects to Keycloak realm" "login=https://idm.$DOMAIN/realms/$NS/protocol/openid-connect/auth" "$out"
 assert_contains "Keycloak accepts NiFi redirect_uri (login page 200)" "keycloak=200" "$out"
+
 echo "== Browser login (authorization code flow) as the demo admin"
 if kubectl -n "$NS" get secret nifi-demo-admin-user >/dev/null 2>&1; then
   USER=$(kubectl -n "$NS" get secret nifi-demo-admin-user -o jsonpath='{.data.username}' | base64 -d)

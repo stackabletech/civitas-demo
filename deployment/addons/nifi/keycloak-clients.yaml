@@ -1,6 +1,5 @@
 ---
-# Copied unchanged from civitas-core-deployment/components/nifi/keycloak-clients.yaml
-# (an addon replaces all of a component's config files). Keep in sync with v2.
+# Copy of components/nifi/keycloak-clients.yaml (addons replace all component files).
 # NiFi OIDC client — Authorization Code flow for the web UI / REST API (browser).
 nifi:
   name: NiFi

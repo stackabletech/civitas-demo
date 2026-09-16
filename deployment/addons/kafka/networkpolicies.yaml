@@ -1,6 +1,5 @@
 ---
-# Same allowed clients as v2's Strimzi policy, selecting Stackable Kafka pods, plus
-# broker <-> controller traffic between the Kafka pods themselves.
+# Clients as in components/kafka, plus broker <-> controller traffic.
 kafka-cluster:
   podSelector:
     app.kubernetes.io/name: kafka

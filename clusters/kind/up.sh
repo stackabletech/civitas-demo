@@ -11,7 +11,6 @@ else
 fi
 kubectl config use-context "kind-$name"
 
-# Bind ingress-nginx to the node's host ports so kind's extraPortMappings reach it.
 "$here/../common/bootstrap.sh" \
   --set controller.hostPort.enabled=true \
   --set controller.service.type=ClusterIP \

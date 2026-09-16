@@ -1,5 +1,5 @@
 ---
-# Stackable Data Platform operators shared by the kafka and nifi addons.
+# Stackable operators used by the kafka and nifi addons.
 component: stackable
 parts:
   - name: commons

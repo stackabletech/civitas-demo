@@ -11,8 +11,7 @@ spec:
   clusterConfig:
     metadataManager: kraft
     tls:
-      # Plaintext client listener without authentication: same contract as the
-      # Strimzi cluster in civitas-core-deployment. Inter-broker/controller TLS stays on.
+      # Plaintext clients without authentication, like the Strimzi setup. Internal TLS stays on.
       serverSecretClass: null
   controllers:
     config:

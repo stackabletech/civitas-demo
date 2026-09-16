@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Resolve *.<domain> inside the cluster to the ingress-nginx controller Service
-# (kind has no k3s-style coredns-custom import, so the Corefile is patched).
+# Resolve *.<domain> in-cluster to the ingress-nginx Service by patching the Corefile.
 set -euo pipefail
 DOMAIN="${DOMAIN:-civitas.test}"
 escaped=${DOMAIN//./\\.}
