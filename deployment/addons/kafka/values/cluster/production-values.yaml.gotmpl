@@ -1,0 +1,18 @@
+---
+controllers:
+  replicas: 3
+brokers:
+  replicas: 3
+  resources:
+    cpu: { min: "1", max: "2" }
+    memory: { limit: 4Gi }
+    storage:
+      logDirs: { capacity: 50Gi }
+  properties:
+    auto.create.topics.enable: "true"
+    offsets.topic.replication.factor: "3"
+    transaction.state.log.replication.factor: "3"
+    transaction.state.log.min.isr: "2"
+    default.replication.factor: "3"
+    min.insync.replicas: "2"
+    log.retention.ms: "2592000000"

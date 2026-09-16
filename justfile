@@ -88,3 +88,11 @@ operators: check-tools link
 # Check Stackable operators
 test-operators:
     tests/operators.sh
+
+# Sync one component of the instance layer, e.g. `just sync-component kafka`
+sync-component component:
+    helmfile -f helmfile-instance.yaml.gotmpl -e {{env}} -l component={{component}} sync
+
+# Check Kafka produce/consume
+test-kafka:
+    tests/kafka.sh

@@ -1,0 +1,25 @@
+name: kafka-cluster
+productVersion: "4.2.1"
+controllers:
+  replicas: 1
+  resources:
+    cpu: { min: 250m, max: "1" }
+    memory: { limit: 1Gi }
+    storage:
+      logDirs: { capacity: 2Gi }
+brokers:
+  replicas: 1
+  resources:
+    cpu: { min: 250m, max: "1" }
+    memory: { limit: 2Gi }
+    storage:
+      logDirs: { capacity: 5Gi }
+  # broker.properties overrides (single broker ⇒ replication factor 1)
+  properties:
+    auto.create.topics.enable: "true"
+    offsets.topic.replication.factor: "1"
+    transaction.state.log.replication.factor: "1"
+    transaction.state.log.min.isr: "1"
+    default.replication.factor: "1"
+    min.insync.replicas: "1"
+    log.retention.ms: "2592000000"

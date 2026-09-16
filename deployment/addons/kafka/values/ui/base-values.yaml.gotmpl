@@ -1,0 +1,17 @@
+---
+yamlApplicationConfig:
+  kafka:
+    clusters:
+      - name: kafka-cluster
+        bootstrapServers: {{ .Values.kafka.cluster.bootstrapService }}:{{ .Values.kafka.cluster.bootstrapPort }}
+
+ingress:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

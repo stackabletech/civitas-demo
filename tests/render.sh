@@ -35,4 +35,13 @@ assert_contains "kafka-operator image 26.7.0" "oci.stackable.tech/sdp/kafka-oper
 np=$(hf operators -l policy-name=stackable-operator-webhooks template 2>&1 || true)
 assert_contains "webhook NetworkPolicy port 8443" "port: 8443" "$np"
 
+echo "== kafka addon"
+k=$(hf instance -l name=kafka-cluster template 2>&1 || true)
+assert_contains "KafkaCluster kind" "kind: KafkaCluster" "$k"
+assert_contains "Kafka 4.2.1" 'productVersion: "4.2.1"' "$k"
+assert_contains "KRaft" "metadataManager: kraft" "$k"
+if grep -q "strimzi" <<<"$(hf instance list 2>&1 || true)"; then fail "strimzi still referenced"; else pass "no strimzi releases"; fi
+ca=$(hf instance -l name=config-adapters-adapters build --embed-values 2>&1 || true)
+assert_contains "config-adapter bootstrap → Stackable service" "kafka-cluster-broker-default-bootstrap" "$ca"
+
 finish

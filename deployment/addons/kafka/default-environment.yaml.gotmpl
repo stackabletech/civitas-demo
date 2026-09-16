@@ -1,0 +1,15 @@
+---
+kafka:
+  cluster:
+    enabled: true
+    namespace: {{ include "civitas.namespace" (dict "global" .Values.global "suffix" "kafka") }}
+    productVersion: "4.2.1"
+    # Consumers (portal, config-adapter, kafka-ui) build the bootstrap address from these keys.
+    # Stackable names the bootstrap Service <cluster>-broker-<roleGroup>-bootstrap.
+    bootstrapService: kafka-cluster-broker-default-bootstrap
+    bootstrapPort: 9092
+  ui:
+    enabled: true
+    namespace: {{ include "civitas.namespace" (dict "global" .Values.global "suffix" "kafka") }}
+    subdomain: kafka-ui
+    pathPrefix: /

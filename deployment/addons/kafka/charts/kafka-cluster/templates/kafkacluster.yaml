@@ -1,0 +1,35 @@
+apiVersion: kafka.stackable.tech/v1alpha1
+kind: KafkaCluster
+metadata:
+  name: {{ .Values.name }}
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+spec:
+  image:
+    productVersion: {{ .Values.productVersion | quote }}
+  clusterConfig:
+    metadataManager: kraft
+    tls:
+      # Plaintext client listener without authentication: same contract as the
+      # Strimzi cluster in civitas-core-deployment. Inter-broker/controller TLS stays on.
+      serverSecretClass: null
+  controllers:
+    config:
+      resources:
+        {{- toYaml .Values.controllers.resources | nindent 8 }}
+    roleGroups:
+      default:
+        replicas: {{ .Values.controllers.replicas }}
+  brokers:
+    config:
+      bootstrapListenerClass: cluster-internal
+      brokerListenerClass: cluster-internal
+      resources:
+        {{- toYaml .Values.brokers.resources | nindent 8 }}
+    configOverrides:
+      broker.properties:
+        {{- toYaml .Values.brokers.properties | nindent 8 }}
+    roleGroups:
+      default:
+        replicas: {{ .Values.brokers.replicas }}

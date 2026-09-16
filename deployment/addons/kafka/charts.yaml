@@ -1,0 +1,8 @@
+---
+kafka:
+  cluster:
+    chart: charts/kafka-cluster
+  ui:
+    repository: https://kafbat.github.io/helm-charts
+    chart: kafka-ui/kafka-ui
+    version: '1.6.4'
