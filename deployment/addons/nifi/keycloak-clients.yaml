@@ -1,6 +1,8 @@
 ---
-# Copy of components/nifi/keycloak-clients.yaml (addons replace all component files).
-# NiFi OIDC client — Authorization Code flow for the web UI / REST API (browser).
+# Copy of components/nifi/keycloak-clients.yaml from civitas-core-deployment.
+# An addon replaces all files of a component, so the Keycloak clients live here too.
+
+# Login for people in the browser.
 nifi:
   name: NiFi
   description: CIVITAS Apache NiFi OIDC client (Authorization Code flow for web UI / REST API)
@@ -24,20 +26,10 @@ nifi:
       - roles
     optionalClientScopes: []
 
-# Every in-cluster machine identity (bootstrap Job, config-adapter) authenticates
-# via the OAuth 2.0 client-credentials grant on its own dedicated confidential
-# client below — no Resource Owner Password Credentials / realm users involved.
-#
-# NiFi's bearer-token/REST path resolves identity from the JWT's `sub` claim
-# regardless of `claim_identifying_user` (that setting only governs the browser
-# code-flow session) — confirmed empirically: an unmapped client-credentials
-# token resolves to the service account's raw Keycloak UUID. Each client below
-# therefore carries an `oidc-hardcoded-claim-mapper` forcing `sub` to a stable,
-# human-chosen string, which `initial_admin_identity` /
-# `identities.configAdapter` are set to match. Safe here specifically because
-# each client has exactly one consumer and no interactive login path to spoof.
+# The two clients below are for programs, not people. NiFi takes the user name of a
+# program from the token's `sub` field, so a mapper sets it to a fixed name.
 
-# Machine-to-machine client for config-adapter's NiFi REST calls.
+# Used by config-adapter to create flows in NiFi.
 nifi-config-adapter:
   name: NiFi Config Adapter
   description: >-
@@ -76,11 +68,7 @@ nifi-config-adapter:
           userinfo.token.claim: 'false'
           introspection.token.claim: 'true'
 
-# Machine-to-machine client the `nifi-bootstrap` Job authenticates as to
-# provision NiFi's initial access policies. Its hardcoded `sub` is also NiFi's
-# `initial_admin_identity` (see `nifi.bootstrapAdminIdentity` /
-# `components/nifi/values/nifi/base-values.yaml.gotmpl`) — NiFi grants that
-# identity global admin policies on first boot.
+# Used by the nifi-bootstrap Job. NiFi makes this name its first admin.
 nifi-bootstrap:
   name: NiFi Bootstrap
   description: >-

@@ -1,11 +1,10 @@
 ---
-# Overrides civitas-core-deployment's defaults/environment/global.yaml and the
-# addons' default-environment files.
+# Your settings. They win over the defaults of civitas-core-deployment and the addons.
 global:
   domain: civitas.test
-  # Namespace and Keycloak realm.
+  # Used as Kubernetes namespace and as Keycloak realm.
   instanceSlug: dev
-  # Gets NiFi admin policies; see `just create-admin-user`.
+  # This user is NiFi admin. See `just create-admin-user`.
   initialUserEmail: admin@civitas.test
   profile: development
   serviceMesh:
@@ -24,5 +23,5 @@ nifi:
   nifi:
     productVersion: "2.9.0"
     ingress:
-      # NiFi UI at https://nifi.<domain>
+      # Show the NiFi web page at https://nifi.<domain>
       enabled: true

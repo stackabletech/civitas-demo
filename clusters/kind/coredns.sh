@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Resolve *.<domain> in-cluster to the ingress-nginx Service by patching the Corefile.
+# Inside the cluster, send all *.civitas.test names to ingress-nginx.
 set -euo pipefail
 DOMAIN="${DOMAIN:-civitas.test}"
 escaped=${DOMAIN//./\\.}

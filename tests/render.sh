@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Offline checks of the rendered helmfile state.
+# Checks the config without touching the cluster.
 source "$(dirname "$0")/lib.sh"
 
 echo "== operators layer"

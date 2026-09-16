@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stackable operators are running and their CRDs are served.
+# Checks that the Stackable operators run.
 source "$(dirname "$0")/lib.sh"
 NS=civitas-operators
 

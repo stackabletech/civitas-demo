@@ -1,4 +1,4 @@
-# Host ports 80/443 reach ingress-nginx.
+# Ports 80 and 443 on your computer go to ingress-nginx.
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:

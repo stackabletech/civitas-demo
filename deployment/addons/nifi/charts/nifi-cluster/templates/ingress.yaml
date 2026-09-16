@@ -8,8 +8,8 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer }}
     nginx.ingress.kubernetes.io/backend-protocol: HTTPS
-    # NiFi rejects hosts missing from its certificate ("Invalid SNI"), which only lists
-    # in-cluster names. External URLs are built from X-Forwarded-Host.
+    # NiFi only answers to names in its certificate (else "Invalid SNI"). Its certificate
+    # only has cluster internal names, so nginx uses one of those.
     nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
     nginx.ingress.kubernetes.io/proxy-ssl-name: {{ .Values.name }}-node.{{ .Release.Namespace }}.svc.cluster.local
     nginx.ingress.kubernetes.io/upstream-vhost: {{ .Values.name }}-node.{{ .Release.Namespace }}.svc.cluster.local

@@ -1,5 +1,5 @@
 ---
-# Stackable operators used by the kafka and nifi addons.
+# The Stackable operators. They run Kafka and NiFi for us.
 component: stackable
 parts:
   - name: commons

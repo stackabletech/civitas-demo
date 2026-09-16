@@ -2,31 +2,18 @@
 {{- $this := .Values.nifi.bootstrap }}
 {{- $nifi := .Values.nifi.nifi }}
 {{- $global := .Values.global }}
-# Checklist:
-# - [x] Containers run as non-root with `readOnlyRootFilesystem` (set in chart values)
-# - [x] Health probes -> not applicable for a one-shot Job
-# - [x] Graceful shutdown -> not applicable; idempotent script
-# - [x] Standard labels
-# - [x] ServiceAccount with least privilege required -> uses default SA, no API access
-# - [x] Named ports -> not applicable
-# - [x] Ingress with TLS -> not applicable
-
-# Bootstrap image (curl + jq)
+# Values for the nifi-bootstrap Job (chart from civitas-core-deployment).
+# It logs in to NiFi once and gives the admin users their permissions.
 image:
   repository: {{ .Values.images.nifi.bootstrap.repository }}
   tag: {{ .Values.images.nifi.bootstrap.tag }}
   digest: {{ .Values.images.nifi.bootstrap.digest }}
 
-
 nifi:
   url: {{ $nifi.url | quote }}
   insecureSkipVerify: true
 
-# Keycloak token endpoint (in-cluster, plain HTTP — TLS terminated by APISIX externally).
-# The Job authenticates via the OAuth 2.0 client-credentials grant on the confidential
-# `nifi-bootstrap` client (see components/nifi/keycloak-clients.yaml), whose protocol
-# mapper hardcodes its `sub` to `nifi-bootstrap` — the value NiFi resolves as identity
-# and which must equal `nifi.bootstrapAdminIdentity` below.
+# The Job gets its token from Keycloak inside the cluster.
 oidc:
   tokenUrl: 'http://keycloak-app-keycloakx-http.{{ .Values.keycloak.app.namespace }}.svc.cluster.local.:80{{ .Values.keycloak.app.pathPrefix | trimSuffix "/" }}/realms/{{ $global.instanceSlug }}/protocol/openid-connect/token'
   clientId: nifi-bootstrap
@@ -35,14 +22,10 @@ oidc:
     key: client-secret
 
 identities:
-  # Keycloak realm has registrationEmailAsUsername=true, so preferred_username == email.
+  # People log in with their email address.
   humanAdmin: {{ $nifi.initialAdminEmail | quote }}
-  # `nifi-config-adapter`'s hardcoded `sub` (client-credentials grant) — see
-  # components/nifi/keycloak-clients.yaml.
   configAdapter: nifi-config-adapter
 
-# Emit Linkerd `Server` CRDs marking NiFi's TLS ports opaque when the namespace
-# is meshed — see `charts/nifi-bootstrap/templates/linkerd-server.yaml`.
 linkerd:
   enable: {{ and ($global.serviceMesh.enable | default false) (eq ($global.serviceMesh.type | default "") "linkerd") }}
 

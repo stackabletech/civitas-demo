@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# End-to-end checks against the running deployment.
+# Runs all checks against the running platform.
 source "$(dirname "$0")/lib.sh"
 NS=$(instance_ns)
 DOMAIN=$(cat "$ROOT/values/default-instance.yaml" | yq '.global.domain')
@@ -16,11 +16,11 @@ POD=$(kubectl -n "$NS" get pod -l app.kubernetes.io/name=kafka,app.kubernetes.io
 BS=$(hf instance -l name=config-adapters-adapters build --embed-values 2>/dev/null | grep -o 'kafka-cluster[a-z-]*bootstrap' | head -1).$NS.svc.cluster.local:9092
 groups=$(kubectl -n "$NS" exec "$POD" -c kafka -- /stackable/kafka/bin/kafka-consumer-groups.sh --bootstrap-server "$BS" --list 2>/dev/null || true)
 assert_contains "consumer group config-adapter-group on Stackable Kafka" "config-adapter-group" "$groups"
-# Same identity and endpoints as config-adapter.
+# Log in to NiFi the same way config-adapter does.
 SECRET=$(kubectl -n "$NS" get secret keycloak-client-nifi-config-adapter -o jsonpath='{.data.client-secret}' | base64 -d)
 NIFI_URL="https://nifi-nifi-node-default-0.nifi-nifi-node-default-headless.$NS.svc.cluster.local:8443"
 TOKEN_URL="http://keycloak-app-keycloakx-http.$NS.svc.cluster.local/realms/$NS/protocol/openid-connect/token"
-# Retry: NiFi request replication can time out right after a restart.
+# Try up to 3 times. NiFi can be slow right after a restart.
 code=$(in_cluster "$NS" app.kubernetes.io/name=config-adapter,app.kubernetes.io/instance=config-adapters-adapters "
     T=\$(curl -fsS -d grant_type=client_credentials -d client_id=nifi-config-adapter -d client_secret='$SECRET' '$TOKEN_URL' | jq -r .access_token)
     for i in 1 2 3; do

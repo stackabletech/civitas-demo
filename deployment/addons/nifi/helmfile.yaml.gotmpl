@@ -1,6 +1,6 @@
 ---
-# helmfile resolves the deployment/ symlink physically, so paths into
-# civitas-core-deployment must be absolute.
+# helmfile follows the deployment/ link to this repo, so relative paths to
+# civitas-core-deployment break. We use the full path instead.
 bases:
   - '{{ requiredEnv "CIVITAS_CORE_DEPLOYMENT" }}/defaults/helm-defaults.yaml'
 ---
@@ -87,7 +87,7 @@ releases:
       {{- end }}
     {{- end }}
     {{- end }}
-    # Profile values files are optional.
+    # development/production values files are optional.
     missingFileHandler: Debug
     values:
       - values/{{ $part.name }}/base-values.yaml.gotmpl

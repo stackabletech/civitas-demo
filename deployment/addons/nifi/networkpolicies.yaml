@@ -1,5 +1,5 @@
 ---
-# Peers as in components/nifi, plus ingress-nginx for the UI.
+# Who may talk to NiFi. Same apps as before, plus ingress-nginx for the web page.
 nifi:
   podSelector:
     app.kubernetes.io/name: nifi

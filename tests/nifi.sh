@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NiFi: cluster, bootstrap Job, REST with a Keycloak token, UI ingress and login.
+# Checks NiFi: running, API with a Keycloak token, web page and login.
 source "$(dirname "$0")/lib.sh"
 NS=$(instance_ns)
 DOMAIN=$(cat "$ROOT/values/default-instance.yaml" | yq '.global.domain')

@@ -5,13 +5,13 @@ cluster := env("CLUSTER", "kind")
 env := "local"
 values := "values/default-instance.yaml"
 
-# List recipes
+# Show all commands
 default:
     @just --list --unsorted
 
 # --- setup -------------------------------------------------------------------
 
-# Verify CLI tools and the civitas-core-deployment checkout
+# Check that all tools and civitas-core-deployment are there
 check-tools:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -30,7 +30,7 @@ check-tools:
     if [ "$missing" = 1 ]; then echo "Install hints: brew install helmfile yq kind k3d gettext"; exit 1; fi
     echo "All tools present."
 
-# Apply the config-adapter patch to civitas-core-deployment
+# Add the needed NiFi URL patch to civitas-core-deployment
 apply-v2-patch:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -38,7 +38,7 @@ apply-v2-patch:
     if grep -q 'nifi.nifi "url"' "$f"; then echo "patch already applied"; exit 0; fi
     git -C "$CIVITAS_CORE_DEPLOYMENT" am "{{justfile_directory()}}/patches/civitas-core-deployment/0001-configurable-nifi-url.patch"
 
-# Symlink ./deployment into civitas-core-deployment
+# Link our deployment folder into civitas-core-deployment
 link:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -53,62 +53,62 @@ link:
     ln -s "$src" "$target"
     echo "linked $target -> $src"
 
-# Remove the deployment symlink from civitas-core-deployment
+# Remove that link again
 unlink:
     #!/usr/bin/env bash
     set -euo pipefail
     target="$CIVITAS_CORE_DEPLOYMENT/deployment"
     if [ -L "$target" ]; then rm "$target" && echo "removed $target"; else echo "no symlink at $target"; fi
 
-# Create or prepare the cluster (CLUSTER=kind|k3d|none)
+# Create or prepare the cluster (CLUSTER=kind, k3d or none)
 cluster-up:
     clusters/{{cluster}}/up.sh
 
-# Delete the cluster (CLUSTER=kind|k3d|none)
+# Delete the cluster
 cluster-down:
     clusters/{{cluster}}/down.sh
 
 # --- deploy ------------------------------------------------------------------
 
-# Tools, cluster, link, operators and instance
+# Do everything: check, cluster, link, operators, platform
 deploy: check-tools cluster-up link operators instance
     @echo "Deployed. Run 'just smoke-test' and 'just credentials'."
 
-# Sync the shared operators (CloudNativePG, Stackable)
+# Install the operators (PostgreSQL and Stackable)
 operators: check-tools link
     helmfile -f helmfile-operators.yaml.gotmpl -e {{env}} sync
 
-# Sync the CIVITAS/CORE instance
+# Install the CIVITAS/CORE platform
 instance: check-tools link
     #!/usr/bin/env bash
     set -euo pipefail
     ns=$(yq '.global.instanceSlug' < {{values}})
     kubectl get namespace "$ns" >/dev/null 2>&1 || kubectl create namespace "$ns"
-    # Keycloak's config job needs an SMTP secret; dummy values as in civitas-core-deployment.
+    # Keycloak wants mail server settings. Fake ones are fine here.
     kubectl -n "$ns" get secret keycloak-smtp >/dev/null 2>&1 || kubectl -n "$ns" create secret generic keycloak-smtp \
       --from-literal=host='smtp.example.com' --from-literal=port='587' \
       --from-literal=from='noreply@example.com' --from-literal=user='noreply@example.com' \
       --from-literal=password='YOUR_SMTP_PASSWORD'
     helmfile -f helmfile-instance.yaml.gotmpl -e {{env}} sync
 
-# Sync one instance component, e.g. `just sync-component nifi`
+# Install one part again, for example `just sync-component nifi`
 sync-component component:
     helmfile -f helmfile-instance.yaml.gotmpl -e {{env}} -l component={{component}} sync
 
-# Render manifests (layer: operators|instance)
+# Print the Kubernetes files without installing (operators or instance)
 template layer="instance" selector="":
     helmfile -f helmfile-{{layer}}.yaml.gotmpl -e {{env}} {{ if selector != "" { "-l " + selector } else { "" } }} template
 
-# Show pending changes (layer: operators|instance)
+# Show what would change (operators or instance)
 diff layer="instance" selector="":
     helmfile -f helmfile-{{layer}}.yaml.gotmpl -e {{env}} {{ if selector != "" { "-l " + selector } else { "" } }} diff
 
-# Delete the cluster and remove the symlink
+# Delete the cluster and remove the link
 destroy: cluster-down unlink
 
 # --- day 2 -------------------------------------------------------------------
 
-# Operators, Stackable resources, pods and ingresses
+# Show what is running
 status:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -117,7 +117,7 @@ status:
     kubectl -n "$ns" get kafkaclusters,nificlusters 2>/dev/null || true
     kubectl -n "$ns" get pods,ingress
 
-# Print Keycloak admin and NiFi UI credentials
+# Show logins for Keycloak and NiFi
 credentials:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -131,7 +131,7 @@ credentials:
       echo "NiFi:     run 'just create-admin-user' first"
     fi
 
-# Enable global.initialUserEmail for UI logins with a generated password
+# Give admin@civitas.test a password so you can log in to NiFi
 create-admin-user:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -153,13 +153,13 @@ create-admin-user:
         \$kc create users -r '$ns' -s username='$email' -s email='$email' -s enabled=true -s firstName=Civitas -s lastName=Admin
         id=\$(\$kc get users -r '$ns' -q exact=true -q username='$email' --fields id --format csv --noquotes | head -n1)
       fi
-      # No SMTP in the demo: skip email verification.
+      # There is no mail server, so mark the email as checked.
       \$kc update users/\$id -r '$ns' -s emailVerified=true -s 'requiredActions=[]'
       \$kc set-password -r '$ns' --userid \"\$id\" --new-password '$pw'
     "
     echo "Updated $email; see 'just credentials'."
 
-# Add *.<domain> to /etc/hosts (sudo)
+# Add the civitas.test names to /etc/hosts (asks for sudo)
 add-hosts:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -167,7 +167,7 @@ add-hosts:
     line="127.0.0.1 idm.$domain portal.$domain api.$domain dashboard.$domain nifi.$domain"
     if grep -qF "$line" /etc/hosts; then echo "already present"; else echo "$line" | sudo tee -a /etc/hosts; fi
 
-# Forward the ingress controller to localhost (port 443 enables logins, uses sudo)
+# Open the platform on localhost (use port 443 for logins, asks for sudo)
 port-forward port="8443":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -177,26 +177,26 @@ port-forward port="8443":
 
 # --- tests -------------------------------------------------------------------
 
-# Offline render checks
+# Check the config without a cluster
 test-render: link
     tests/render.sh
 
-# Cluster prerequisites
+# Check the cluster basics
 test-cluster:
     tests/cluster.sh
 
-# Stackable operators and CRDs
+# Check the Stackable operators
 test-operators:
     tests/operators.sh
 
-# Kafka produce/consume
+# Check Kafka by sending and reading a message
 test-kafka:
     tests/kafka.sh
 
-# NiFi REST, UI and login
+# Check NiFi API, web page and login
 test-nifi:
     tests/nifi.sh
 
-# All checks against the running deployment
+# Run all checks
 smoke-test:
     tests/smoke.sh

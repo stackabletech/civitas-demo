@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cluster prerequisites for the deployment layer (any distribution).
+# Checks that the cluster has the basics we need.
 source "$(dirname "$0")/lib.sh"
 DOMAIN=$(cat "$ROOT/values/default-instance.yaml" | yq '.global.domain')
 

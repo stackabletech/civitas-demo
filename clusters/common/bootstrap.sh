@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ingress-nginx, cert-manager and the CIVITAS CA ClusterIssuer for any cluster.
+# Installs ingress-nginx, cert-manager and the CIVITAS certificate issuer.
 set -euo pipefail
 
 : "${CIVITAS_CORE_DEPLOYMENT:?}"

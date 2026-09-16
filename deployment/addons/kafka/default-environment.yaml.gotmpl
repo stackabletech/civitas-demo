@@ -4,7 +4,7 @@ kafka:
     enabled: true
     namespace: {{ include "civitas.namespace" (dict "global" .Values.global "suffix" "kafka") }}
     productVersion: "4.2.1"
-    # Read by portal, config-adapter and kafka-ui.
+    # portal, config-adapter and kafka-ui connect to this address.
     bootstrapService: kafka-cluster-broker-default-bootstrap
     bootstrapPort: 9092
   ui:

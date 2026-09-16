@@ -1,5 +1,5 @@
 {{- if .Values.oidc.caSecretClass }}
-# CA of Keycloak's ingress certificate, for the OIDC connection.
+# Lets NiFi trust the certificate of Keycloak.
 apiVersion: secrets.stackable.tech/v1alpha1
 kind: SecretClass
 metadata:

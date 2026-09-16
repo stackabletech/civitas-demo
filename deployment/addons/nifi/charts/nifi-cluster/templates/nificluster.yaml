@@ -8,7 +8,7 @@ spec:
   image:
     productVersion: {{ .Values.productVersion | quote }}
   clusterConfig:
-    # No zookeeperConfigMapName: Kubernetes clustering backend.
+    # No ZooKeeper. NiFi keeps its cluster state in Kubernetes.
     authentication:
       - authenticationClass: {{ include "nifi-cluster.authClassName" . }}
         oidc:
@@ -17,7 +17,7 @@ spec:
       standard:
         accessPolicyProvider:
           fileBased:
-            # Hardcoded `sub` of the nifi-bootstrap Keycloak client.
+            # The nifi-bootstrap Job logs in with this name.
             initialAdminUser: {{ .Values.initialAdminUser }}
     sensitiveProperties:
       keySecret: {{ .Values.name }}-sensitive-property-key
@@ -30,7 +30,7 @@ spec:
         {{- toYaml .Values.resources | nindent 8 }}
     configOverrides:
       nifi.properties:
-        # The CIVITAS realm signs tokens with ES256 only.
+        # Keycloak signs tokens with ES256 in this realm.
         nifi.security.user.oidc.preferred.jwsalgorithm: ES256
     podOverrides:
       spec:
@@ -50,7 +50,7 @@ spec:
         containers:
           - name: nifi
             volumeMounts:
-              # Driver path expected by config-adapter flows.
+              # PostgreSQL driver. config-adapter flows look for it here.
               - name: jdbc-drivers
                 mountPath: /opt/nifi/drivers
                 readOnly: true

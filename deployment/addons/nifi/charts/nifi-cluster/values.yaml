@@ -8,9 +8,9 @@ oidc:
   realm: dev
   clientId: nifi
   clientSecretName: keycloak-client-nifi
-  # SecretClass with Keycloak's CA; empty uses webPki.
+  # Where NiFi finds the CA of Keycloak. Empty means public CAs.
   caSecretClass: ""
-  # Source Secret (key ca.crt) for caSecretClass.
+  # Secret with the CA file (ca.crt).
   caSourceSecret: custom-ca-cert
 jdbc:
   image: docker.io/badouralix/curl-jq@sha256:f0370deaaf07dc61af9bae7474cbcffee62be5b3e83e1f6dd5d25d340e6c16c4

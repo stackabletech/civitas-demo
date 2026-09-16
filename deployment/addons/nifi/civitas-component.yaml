@@ -1,5 +1,5 @@
 ---
-# Replaces components/nifi (apache-nifi-helm) with a Stackable NifiCluster.
+# Replaces the NiFi Helm chart of civitas-core-deployment with Stackable NiFi.
 component: nifi
 parts:
   - name: nifi

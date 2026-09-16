@@ -1,6 +1,6 @@
 ---
-# The kube-apiserver calls the operators' CRD conversion webhooks on :8443. It cannot be
-# selected as a peer, so allow the port from anywhere (same as postgres-operator-webhook).
+# Kubernetes itself calls the operators on port 8443. We cannot name Kubernetes
+# as a sender, so this port is open for all (like postgres-operator-webhook).
 stackable-operator-webhooks:
   deployLayer: operators
   componentNamespace: stackable.commons

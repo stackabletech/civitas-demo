@@ -14,7 +14,7 @@ brokers:
     memory: { limit: 2Gi }
     storage:
       logDirs: { capacity: 5Gi }
-  # broker.properties overrides; replication factor 1 for a single broker
+  # Kafka settings. With only one broker every copy count must be 1.
   properties:
     auto.create.topics.enable: "true"
     offsets.topic.replication.factor: "1"

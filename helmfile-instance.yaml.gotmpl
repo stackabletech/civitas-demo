@@ -1,5 +1,5 @@
 ---
-# One CIVITAS/CORE instance (namespace = global.instanceSlug).
+# The CIVITAS/CORE platform. Everything goes into one namespace (global.instanceSlug).
 environments:
   local:
     values: []
@@ -8,7 +8,7 @@ helmfiles:
   - path: '{{ env "CIVITAS_CORE_DEPLOYMENT" | default "../civitas-core-deployment" }}/helmfile-root.yaml.gotmpl'
     values:
       - values/default-instance.yaml
-      # Comma-separated EXTRA_VALUES files are layered on top.
+      # Extra values files from EXTRA_VALUES (comma separated) win over the ones above.
       {{- range (env "EXTRA_VALUES" | splitList "," | compact) }}
       - {{ . | quote }}
       {{- end }}

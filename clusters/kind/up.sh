@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create (or reuse) a kind cluster and install the common prerequisites.
+# Create a kind cluster (or use the one that exists) and install the basics.
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 name="${KIND_CLUSTER_NAME:-kind}"

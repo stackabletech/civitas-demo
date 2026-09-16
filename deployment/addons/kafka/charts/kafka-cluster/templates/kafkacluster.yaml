@@ -11,7 +11,8 @@ spec:
   clusterConfig:
     metadataManager: kraft
     tls:
-      # Plaintext clients without authentication, like the Strimzi setup. Internal TLS stays on.
+      # Apps connect without TLS and login, like before with Strimzi.
+      # Traffic between the Kafka servers is still encrypted.
       serverSecretClass: null
   controllers:
     config:

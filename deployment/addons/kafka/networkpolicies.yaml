@@ -1,5 +1,5 @@
 ---
-# Clients as in components/kafka, plus broker <-> controller traffic.
+# Who may talk to Kafka. Same apps as before, plus the Kafka pods themselves.
 kafka-cluster:
   podSelector:
     app.kubernetes.io/name: kafka

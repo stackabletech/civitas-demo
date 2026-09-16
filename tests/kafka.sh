@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Produce and consume a message through the Stackable Kafka bootstrap Service.
+# Sends a message to Kafka and reads it back.
 source "$(dirname "$0")/lib.sh"
 NS=$(instance_ns)
 SVC=$(hf instance -l name=config-adapters-adapters build --embed-values 2>/dev/null \

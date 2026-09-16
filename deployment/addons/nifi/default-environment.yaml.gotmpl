@@ -9,7 +9,7 @@ nifi:
     initialAdminEmail: {{ .Values.global.initialUserEmail }}
     bootstrapAdminIdentity: nifi-bootstrap
     postgresqlJdbcVersion: "42.7.4"
-    # Used by config-adapter and the bootstrap Job.
+    # config-adapter and the bootstrap Job talk to NiFi here.
     url: https://nifi-nifi-node-default-0.nifi-nifi-node-default-headless.{{ $ns }}.svc.cluster.local:8443
     ingress:
       enabled: true

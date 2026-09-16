@@ -1,5 +1,5 @@
 ---
-# Replaces components/kafka (Strimzi) with a Stackable KafkaCluster.
+# Replaces the Strimzi Kafka of civitas-core-deployment with Stackable Kafka.
 component: kafka
 parts:
   - name: cluster

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared test helpers.
+# Helpers for the test scripts.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -28,8 +28,8 @@ hf() { # layer (operators|instance), remaining args passed to helmfile
 
 instance_ns() { cat "$ROOT/values/default-instance.yaml" | yq '.global.instanceSlug'; }
 
-# Run SCRIPT in a throwaway curl/jq pod and print its output. Reads logs after
-# completion because `kubectl run --rm -i` can lose output of short-lived pods.
+# Run SCRIPT in a short lived pod and print what it printed. We read the logs at the
+# end because `kubectl run --rm -i` sometimes loses the output of fast pods.
 # usage: in_cluster NAMESPACE LABELS SCRIPT   (LABELS: k=v,k=v or "")
 in_cluster() {
   local ns=$1 labels=$2 script=$3 pod="check-$RANDOM$RANDOM"
