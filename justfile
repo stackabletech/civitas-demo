@@ -68,3 +68,15 @@ apply-v2-patch:
     f="$CIVITAS_CORE_DEPLOYMENT/components/config-adapters/values/adapters/base-values.yaml.gotmpl"
     if grep -q 'nifi.nifi "url"' "$f"; then echo "patch already applied"; exit 0; fi
     git -C "$CIVITAS_CORE_DEPLOYMENT" am "{{justfile_directory()}}/patches/civitas-core-deployment/0001-configurable-nifi-url.patch"
+
+# Create/prepare the cluster (CLUSTER=kind|k3d|none, KIND_CLUSTER_NAME for kind)
+cluster-up:
+    clusters/{{cluster}}/up.sh
+
+# Delete the cluster (CLUSTER=kind|k3d|none)
+cluster-down:
+    clusters/{{cluster}}/down.sh
+
+# Check cluster prerequisites
+test-cluster:
+    tests/cluster.sh

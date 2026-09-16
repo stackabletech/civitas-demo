@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Resolve *.<domain> inside the cluster to the ingress-nginx controller Service
+# (kind has no k3s-style coredns-custom import, so the Corefile is patched).
+set -euo pipefail
+DOMAIN="${DOMAIN:-civitas.test}"
+escaped=${DOMAIN//./\\.}
+rule="    rewrite stop name regex (.*\\.)?${escaped}\\.? ingress-nginx-controller.ingress-nginx.svc.cluster.local. answer auto"
+
+corefile=$(kubectl -n kube-system get configmap coredns -o jsonpath='{.data.Corefile}')
+if grep -qF "ingress-nginx-controller.ingress-nginx.svc.cluster.local" <<<"$corefile"; then
+  echo "CoreDNS already rewrites *.$DOMAIN"; exit 0
+fi
+patched=$(awk -v rule="$rule" '{print} /^\.:53 \{/{print rule}' <<<"$corefile")
+kubectl -n kube-system create configmap coredns --from-literal=Corefile="$patched" --dry-run=client -o yaml \
+  | kubectl apply -f -
+kubectl -n kube-system rollout restart deployment/coredns
+kubectl -n kube-system rollout status deployment/coredns --timeout=120s
