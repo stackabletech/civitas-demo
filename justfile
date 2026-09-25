@@ -20,7 +20,7 @@ check-tools:
     #!/usr/bin/env bash
     set -euo pipefail
     missing=0
-    for t in kubectl helm helmfile yq envsubst; do
+    for t in kubectl helm helmfile yq envsubst jq python3; do
       command -v "$t" >/dev/null || { echo "missing: $t"; missing=1; }
     done
     case "{{cluster}}" in
@@ -30,7 +30,7 @@ check-tools:
     helm plugin list | grep -q '^diff' || { echo "missing: helm-diff (helm plugin install https://github.com/databus23/helm-diff)"; missing=1; }
     grep -q 'nifi.nifi "url"' "$CIVITAS_CORE_DEPLOYMENT/components/config-adapters/values/adapters/base-values.yaml.gotmpl" 2>/dev/null \
       || { echo "civitas-core-deployment missing or not patched at $CIVITAS_CORE_DEPLOYMENT: run 'just setup'"; missing=1; }
-    if [ "$missing" = 1 ]; then echo "Install hints: brew install helmfile yq kind k3d gettext"; exit 1; fi
+    if [ "$missing" = 1 ]; then echo "Install hints: brew install helmfile yq jq kind k3d gettext python3"; exit 1; fi
     echo "All tools present."
 
 # Get civitas-core-deployment and add the NiFi URL patch (run once)

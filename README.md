@@ -43,11 +43,11 @@ NiFi. It is in `patches/` and `just setup` adds it.
 ## What you need
 
 - `kubectl`, `helm` with the `helm-diff` plugin, `helmfile`, `yq`, `envsubst`, [`just`](https://github.com/casey/just)
-- `git`, `kind` or `k3d`, and Docker (`jq` and `python3` for the demo)
+- `git`, `jq`, `python3`, `kind` or `k3d`, and Docker
 - About 8 CPU cores and 20 GB memory. The first install takes 20 to 30 minutes.
 
 ```bash
-brew install helmfile yq kind
+brew install helmfile yq jq kind
 helm plugin install https://github.com/databus23/helm-diff   # helm 4 needs --verify=false
 ```
 
