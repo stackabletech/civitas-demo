@@ -16,7 +16,7 @@ helm upgrade --install ingress-nginx ingress-nginx \
   --set controller.config.proxy-buffer-size=64k \
   --set-string controller.config.proxy-buffers="4 64k" \
   --set controller.config.proxy-busy-buffers-size=128k \
-  "${INGRESS_EXTRA_ARGS[@]}" \
+  ${INGRESS_EXTRA_ARGS[@]+"${INGRESS_EXTRA_ARGS[@]}"} \
   --wait --timeout 10m
 
 helm upgrade --install cert-manager cert-manager \
@@ -26,8 +26,8 @@ helm upgrade --install cert-manager cert-manager \
   --wait --timeout 10m
 
 SSL="$CIVITAS_CORE_DEPLOYMENT/dev-deployment/.ssl"
-CA_CERT=$(base64 -w0 < "$SSL/civitas.crt")
-CA_KEY=$(base64 -w0 < "$SSL/civitas.key")
+CA_CERT=$(base64 < "$SSL/civitas.crt" | tr -d '\n')
+CA_KEY=$(base64 < "$SSL/civitas.key" | tr -d '\n')
 export DOMAIN CA_CERT CA_KEY
 envsubst '${DOMAIN} ${CA_CERT} ${CA_KEY}' < "$CIVITAS_CORE_DEPLOYMENT/dev-deployment/ca-template.yaml" | kubectl apply -f -
 kubectl wait --for=condition=Ready clusterissuer/selfsigned-ca --timeout=120s

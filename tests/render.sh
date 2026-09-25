@@ -26,7 +26,8 @@ assert_contains "Kafka bootstrap is the Stackable service" "kafka-cluster-broker
 nifi_url=$(grep -A1 'name: NIFI_URL$' <<<"$ca" | grep -o 'value: .*' | head -1 || true)
 assert_contains "NIFI_URL is the Stackable pod" "nifi-nifi-node-default-0" "$nifi_url"
 
-tmpv=$(mktemp "$ROOT/.test-values-XXXX.yaml"); trap 'rm -f "$tmpv"' EXIT
+tmpd=$(mktemp -d); trap 'rm -rf "$tmpd"' EXIT
+tmpv="$tmpd/values.yaml"
 printf 'nifi:\n  nifi:\n    url: https://nifi.example:8443\n' > "$tmpv"
 ca=$(EXTRA_VALUES="$tmpv" hf instance -l name=config-adapters-adapters build --embed-values 2>&1 || true)
 nifi_url=$(grep -A1 'name: NIFI_URL$' <<<"$ca" | grep -o 'value: .*' | head -1 || true)
